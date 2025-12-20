@@ -1,0 +1,26 @@
+{
+  "name": "Padel Club Reserveringen",
+  "short_name": "Padel Club",
+  "description": "Reserveer je padel terrein eenvoudig via de app",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#2e7d32",
+  "theme_color": "#2e7d32",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "lang": "nl",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

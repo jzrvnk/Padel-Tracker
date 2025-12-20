@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎾 Padel Club</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2e7d32">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%); min-height: 100vh; }
+    
+    .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+    .login-card h1 { text-align: center; color: #2e7d32; margin-bottom: 30px; }
+    
+    .app-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .header { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+    
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; }
+    .nav-tab { padding: 10px 20px; background: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+    .nav-tab.active { background: #2e7d32; color: white; }
+    
+    .schedule-table, .admin-panel, .profile-panel { background: white; border-radius: 15px; overflow-x: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .table-header { background: #2e7d32; color: white; padding: 20px; text-align: center; }
+    
+    table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    th, td { padding: 15px; text-align: center; border-bottom: 1px solid #e0e0e0; }
+    th { background: #f5f5f5; font-weight: bold; color: #2e7d32; position: relative; }
+    .availability-indicator { font-size: 11px; font-weight: normal; display: block; margin-top: 2px; }
+    .available { color: #4caf50; }
+    .unavailable { color: #f44336; }
+    
+    .date-cell { font-weight: bold; color: #2e7d32; }
+    .terrain-cell { font-size: 18px; font-weight: bold; }
+    .terrain-full { color: #f44336; }
+    .terrain-available { color: #4caf50; }
+    
+    .player-cell { position: relative; }
+    .player-checkbox { width: 20px; height: 20px; margin: 0 5px; cursor: pointer; }
+    .player-checkbox:disabled { cursor: not-allowed; opacity: 0.5; }
+    .player-unavailable { background: #ffebee !important; }
+    
+    .input-group { margin: 15px 0; position: relative; }
+    .input-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2e7d32; }
+    .input-group input, .input-group select { width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; }
+    .input-group input:focus, .input-group select:focus { outline: none; border-color: #2e7d32; }
+    .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 20px; user-select: none; }
+    
+    .btn { padding: 15px 30px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+    .btn-primary { background: #2e7d32; color: white; }
+    .btn-primary:hover { background: #1b5e20; }
+    .btn-secondary { background: #757575; color: white; }
+    .btn-secondary:hover { background: #424242; }
+    .btn-danger { background: #f44336; color: white; }
+    .btn-danger:hover { background: #d32f2f; }
+    
+    .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+    .status-open { background: #e8f5e9; color: #2e7d32; }
+    .status-full { background: #ffebee; color: #c62828; }
+    
+    .admin-form, .profile-form { padding: 30px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+    .checkbox-group { display: flex; align-items: center; gap: 10px; }
+    
+    .player-list { margin-top: 30px; }
+    .player-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e0e0e0; }
+    .player-info { flex: 1; }
+    .player-name { font-weight: bold; color: #2e7d32; }
+    .player-details { font-size: 14px; color: #666; margin-top: 5px; }
+    
+    .profile-card { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+    
+    .save-bar { padding: 20px; background: #fff3cd; border-top: 1px solid #ffeaa7; display: flex; gap: 15px; justify-content: center; }
+    
+    .install-prompt { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #2e7d32; color: white; padding: 15px; border-radius: 10px; display: none; z-index: 1000; }
+    .install-btn { background: white; color: #2e7d32; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-left: 10px; }
+    
+    .loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
+    .toast { background: white; padding: 16px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; animation: slideIn 0.3s ease; }
+    .toast.success { border-left: 4px solid #4caf50; }
+    .toast.error { border-left: 4px solid #f44336; }
+    .toast.info { border-left: 4px solid #2196f3; }
+    .toast-icon { font-size: 24px; }
+    .toast-message { flex: 1; color: #333; }
+    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
+    .toast.hiding { animation: slideOut 0.3s ease; }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+    .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; }
+    .modal-header { font-size: 20px; font-weight: bold; color: #2e7d32; margin-bottom: 20px; }
+    
+    @media (max-width: 768px) {
+      .schedule-table { overflow-x: auto; }
+      table { min-width: 800px; }
+      th, td { padding: 10px 5px; font-size: 14px; }
+      .form-row { grid-template-columns: 1fr; }
+      .header { flex-direction: column; gap: 15px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Score Modal -->
+    <div v-if="editingScore" class="modal-overlay" @click.self="cancelScoreEdit">
+      <div class="modal-content">
+        <div class="modal-header">🏆 Score Invoeren</div>
+        <div style="margin-bottom: 20px; background: #f5f5f5; padding: 15px; border-radius: 8px;">
+          <div style="margin-bottom: 10px;">
+            <strong>Team 1:</strong> {{ editingScore.players[0]?.name }} + {{ editingScore.players[1]?.name }}
+          </div>
+          <div>
+            <strong>Team 2:</strong> {{ editingScore.players[2]?.name }} + {{ editingScore.players[3]?.name }}
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="input-group">
+            <label>Team 1 Sets</label>
+            <input v-model="scoreForm.team1Sets" placeholder="bijv. 1" type="number" min="0">
+          </div>
+          <div class="input-group">
+            <label>Team 2 Sets</label>
+            <input v-model="scoreForm.team2Sets" placeholder="bijv. 2" type="number" min="0">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn btn-primary" @click="saveScore">💾 Opslaan</button>
+          <button class="btn btn-secondary" @click="cancelScoreEdit">❌ Annuleren</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container">
+      <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type, { hiding: toast.hiding }]">
+        <span class="toast-icon">{{ toast.icon }}</span>
+        <span class="toast-message">{{ toast.message }}</span>
+      </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div v-if="loading" class="loading">
+      <h3>🔄 Verbinden met database...</h3>
+    </div>
+
+    <!-- Install Prompt -->
+    <div id="installPrompt" class="install-prompt">
+      📱 Installeer de Padel app op je telefoon!
+      <button id="installBtn" class="install-btn">Installeren</button>
+      <button id="dismissBtn" class="install-btn" style="background: transparent; color: white;">Later</button>
+    </div>
+
+    <!-- Login Scherm -->
+    <div v-if="!isLoggedIn && !loading" class="login-container">
+      <div class="login-card">
+        <h1>🎾 Padel Club</h1>
+        <div class="input-group">
+          <input v-model="loginData.username" placeholder="Gebruikersnaam" type="text" @keyup.enter="login">
+        </div>
+        <div class="input-group">
+          <input v-model="loginData.password" placeholder="Wachtwoord" :type="showPassword ? 'text' : 'password'" @keyup.enter="login">
+          <span class="password-toggle" @click="showPassword = !showPassword">
+            {{ showPassword ? '🙈' : '👁️' }}
+          </span>
+        </div>
+        <button class="btn btn-primary" @click="login" style="width: 100%;">Inloggen</button>
+        <div v-if="loginError" style="color: red; text-align: center; margin-top: 10px;">{{ loginError }}</div>
+      </div>
+    </div>
+
+    <!-- Hoofdapplicatie -->
+    <div v-if="isLoggedIn && !loading" class="app-container">
+      <div class="header">
+        <h1>🎾 Padel Reserveringen</h1>
+        <div>
+          <button v-if="!notificationsEnabled" class="btn btn-secondary" @click="requestNotificationPermission" style="margin-right: 10px;">
+            🔔 Notificaties Aan
+          </button>
+          <span v-else style="margin-right: 15px; color: white;">✅ Notificaties aan</span>
+          <span>Welkom, {{ currentUser }}!</span>
+          <button class="btn btn-secondary" @click="logout" style="margin-left: 15px;">Uitloggen</button>
+        </div>
+      </div>
+
+      <!-- Navigatie Tabs -->
+      <div class="nav-tabs">
+        <button class="nav-tab" :class="{ active: activeTab === 'schedule' }" @click="activeTab = 'schedule'">
+          📅 Reserveringen
+        </button>
+        <button class="nav-tab" :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">
+          👤 Profiel
+        </button>
+        <button v-if="admins.includes(currentUser)" class="nav-tab" :class="{ active: activeTab === 'admin' }" @click="activeTab = 'admin'">
+          ⚙️ Beheer
+        </button>
+      </div>
+
+      <!-- Reserveringen Tab -->
+      <div v-if="activeTab === 'schedule'" class="schedule-table">
+        <div class="table-header">
+          <h2>Komende 5 vrijdagen</h2>
+        </div>
+        
+        <div v-if="!admins.includes(currentUser) && admins.length === 0" style="padding: 20px; text-align: center; background: #fff3cd; margin: 20px;">
+          <p style="margin-bottom: 10px;">⚠️ Geen admin gevonden. Klik hieronder om jezelf admin te maken:</p>
+          <button class="btn btn-primary" @click="makeAdmin">🔑 Maak Mij Admin</button>
+        </div>
+        
+        <div v-if="players.length <= 1" style="padding: 40px; text-align: center; color: #666;">
+          <h3>🎾 Nog geen andere spelers</h3>
+          <p>Voeg spelers toe via het Beheer tabblad.</p>
+        </div>
+        
+        <table v-else>
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Terrein 1</th>
+              <th>Terrein 2</th>
+              <th v-for="player in players" :key="player.id" :class="{ 'player-unavailable': !player.available }">
+                {{ player.name }}
+                <br>
+                <span v-if="player.available" class="availability-indicator available" title="Beschikbaar voor vervanging">✓ Beschikbaar</span>
+                <span v-else class="availability-indicator unavailable" title="Niet beschikbaar voor vervanging">✗ Niet beschikbaar</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="friday in fridays" :key="friday.date">
+              <td class="date-cell">{{ friday.formatted }}</td>
+              
+              <td class="terrain-cell">
+                <span :class="getTerrainClass(friday.date, 1)">
+                  {{ getTerrainStatus(friday.date, 1) }}
+                </span>
+                <div class="status-badge" :class="isDateFull(friday.date, 1) ? 'status-full' : 'status-open'">
+                  {{ isDateFull(friday.date, 1) ? 'VOL' : 'OPEN' }}
+                </div>
+              </td>
+              
+              <td class="terrain-cell">
+                <span :class="getTerrainClass(friday.date, 2)">
+                  {{ getTerrainStatus(friday.date, 2) }}
+                </span>
+                <div class="status-badge" :class="isDateFull(friday.date, 2) ? 'status-full' : 'status-open'">
+                  {{ isDateFull(friday.date, 2) ? 'VOL' : 'OPEN' }}
+                </div>
+              </td>
+              
+              <td v-for="player in players" :key="player.id" class="player-cell">
+                <input 
+                  type="checkbox" 
+                  class="player-checkbox"
+                  :checked="isPlayerSelected(friday.date, player.id)"
+                  :disabled="!canPlayerSelect(friday.date, player.id)"
+                  @change="togglePlayerSelection(friday.date, player.id)"
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <!-- Save/Cancel Buttons -->
+        <div v-if="hasUnsavedChanges" class="save-bar">
+          <button class="btn btn-primary" @click="saveReservations">
+            💾 Wijzigingen Opslaan
+          </button>
+          <button class="btn btn-secondary" @click="cancelChanges">
+            ❌ Annuleren
+          </button>
+        </div>
+      </div>
+
+      <!-- Profiel Tab -->
+      <div v-if="activeTab === 'profile'" class="profile-panel">
+        <div class="table-header">
+          <h2>👤 Mijn Profiel</h2>
+        </div>
+        
+        <div class="profile-form">
+          <div class="profile-card">
+            <h3>{{ currentUser }}</h3>
+            <p>Bewerk je persoonlijke gegevens</p>
+          </div>
+          
+          <div v-if="currentPlayerProfile" class="profile-form">
+            <!-- Iedereen kan zijn eigen profiel bewerken -->
+            <div class="form-row">
+              <div class="input-group">
+                <label>Volledige Naam</label>
+                <input v-model="editProfile.name" type="text" placeholder="Voor- en achternaam">
+              </div>
+              <div class="input-group">
+                <label>Email Adres</label>
+                <input v-model="editProfile.email" type="email" placeholder="jouw@email.nl">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="input-group">
+                <label>Telefoonnummer</label>
+                <input v-model="editProfile.phone" type="tel" placeholder="06-12345678">
+              </div>
+              <div></div>
+            </div>
+            
+            <div class="form-row">
+              <div class="checkbox-group">
+                <input v-model="editProfile.notifications" type="checkbox" id="profile-notifications">
+                <label for="profile-notifications">📱 Email notificaties ontvangen</label>
+              </div>
+              <div class="checkbox-group">
+                <input v-model="editProfile.available" type="checkbox" id="profile-available">
+                <label for="profile-available">✅ Beschikbaar voor vervanging</label>
+              </div>
+            </div>
+            
+            <button class="btn btn-primary" @click="updateProfile">💾 Profiel Opslaan</button>
+          </div>
+          
+          <div v-else style="text-align: center; padding: 40px; color: #666;">
+            <h3>🔒 Geen Profiel Gevonden</h3>
+            <p>Vraag de beheerder om je profiel aan te maken.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Panel -->
+      <div v-if="activeTab === 'admin' && admins.includes(currentUser)" class="admin-panel">
+        <div class="table-header">
+          <h2>⚙️ Beheer</h2>
+        </div>
+        
+        <!-- Sub-tabs voor admin -->
+        <div style="display: flex; gap: 10px; padding: 20px; background: #f5f5f5; border-bottom: 2px solid #e0e0e0;">
+          <button 
+            class="btn" 
+            :class="adminSubTab === 'players' ? 'btn-primary' : 'btn-secondary'"
+            @click="adminSubTab = 'players'"
+            style="padding: 10px 20px;">
+            👥 Spelers
+          </button>
+          <button 
+            class="btn" 
+            :class="adminSubTab === 'scores' ? 'btn-primary' : 'btn-secondary'"
+            @click="adminSubTab = 'scores'"
+            style="padding: 10px 20px;">
+            🏆 Uitslagen
+          </button>
+        </div>
+        
+        <!-- Spelers Tab -->
+        <div v-if="adminSubTab === 'players'" class="admin-form">
+          <h3 v-if="!editingPlayer">Nieuwe Speler Toevoegen</h3>
+          <h3 v-else style="color: #ff9800;">✏️ Speler Bewerken: {{ editingPlayer.name }}</h3>
+          
+          <div class="form-row">
+            <div class="input-group">
+              <label>Volledige Naam *</label>
+              <input v-model="newPlayer.name" placeholder="Voor- en achternaam" type="text">
+            </div>
+            <div class="input-group">
+              <label>Email Adres</label>
+              <input v-model="newPlayer.email" placeholder="speler@email.nl" type="email">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="input-group">
+              <label>Telefoonnummer</label>
+              <input v-model="newPlayer.phone" placeholder="06-12345678" type="tel">
+            </div>
+            <div class="input-group">
+              <label>Gebruikersnaam *</label>
+              <input v-model="newPlayer.username" placeholder="gebruikersnaam" type="text">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="input-group">
+              <label>Wachtwoord *</label>
+              <input v-model="newPlayer.password" placeholder="wachtwoord123" type="password">
+            </div>
+            <div></div>
+          </div>
+          
+          <button v-if="!editingPlayer" class="btn btn-primary" @click="addPlayer">➕ Speler Toevoegen</button>
+          <div v-else style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" @click="savePlayerEdit">💾 Wijzigingen Opslaan</button>
+            <button class="btn btn-secondary" @click="cancelEdit">❌ Annuleren</button>
+          </div>
+          
+          <div class="player-list">
+            <h3>Spelers ({{ players.length }})</h3>
+            
+            <div v-if="players.length === 0" style="text-align: center; padding: 20px; color: #666;">
+              <p>Nog geen spelers toegevoegd.</p>
+            </div>
+            
+            <div v-for="player in players" :key="player.id" class="player-item">
+              <div class="player-info">
+                <div class="player-name">{{ player.name }}</div>
+                <div class="player-details">
+                  📧 {{ player.email || 'Geen email' }} • 
+                  📱 {{ player.phone || 'Geen telefoon' }}<br>
+                  👤 {{ player.username || 'Geen login' }}
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" @click="editPlayer(player.id)" style="padding: 10px 20px;">✏️ Bewerken</button>
+                <button class="btn btn-danger" @click="removePlayer(player.id)" style="padding: 10px 20px;">🗑️</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Uitslagen Tab -->
+        <div v-if="adminSubTab === 'scores'" class="admin-form">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: #2e7d32; margin: 0;">🏆 Match Uitslagen</h3>
+            <button class="btn btn-danger" @click="resetAllStats" style="padding: 10px 20px;">🗑️ Reset Alle Statistieken</button>
+          </div>
+          <div v-for="friday in fridays" :key="'score-'+friday.date" style="margin-bottom: 20px; background: #f5f5f5; padding: 20px; border-radius: 8px;">
+            <h4 style="color: #2e7d32; margin-bottom: 15px;">{{ friday.formatted }}</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div>
+                <strong>Terrein 1:</strong>
+                <div v-if="getPlayersForCourt(friday.date, 1).length === 4" style="margin-top: 10px;">
+                  <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                    {{ getPlayersForCourt(friday.date, 1)[0]?.name }} + {{ getPlayersForCourt(friday.date, 1)[1]?.name }}<br>
+                    vs<br>
+                    {{ getPlayersForCourt(friday.date, 1)[2]?.name }} + {{ getPlayersForCourt(friday.date, 1)[3]?.name }}
+                  </div>
+                  <div v-if="getScore(friday.date, 1)" style="background: #e8f5e9; padding: 8px; border-radius: 5px; margin-bottom: 8px; font-size: 14px;">
+                    <strong>{{ getScore(friday.date, 1).team1Sets }}</strong> - <strong>{{ getScore(friday.date, 1).team2Sets }}</strong> sets
+                  </div>
+                  <button class="btn btn-primary" @click="openScoreDialog(friday.date, 1)" style="padding: 6px 12px; font-size: 13px;">
+                    {{ getScore(friday.date, 1) ? '✏️ Wijzig' : '➕ Score' }}
+                  </button>
+                </div>
+                <div v-else style="color: #999; font-size: 13px; margin-top: 10px;">Nog geen 4 spelers</div>
+              </div>
+              <div>
+                <strong>Terrein 2:</strong>
+                <div v-if="getPlayersForCourt(friday.date, 2).length === 4" style="margin-top: 10px;">
+                  <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                    {{ getPlayersForCourt(friday.date, 2)[0]?.name }} + {{ getPlayersForCourt(friday.date, 2)[1]?.name }}<br>
+                    vs<br>
+                    {{ getPlayersForCourt(friday.date, 2)[2]?.name }} + {{ getPlayersForCourt(friday.date, 2)[3]?.name }}
+                  </div>
+                  <div v-if="getScore(friday.date, 2)" style="background: #e8f5e9; padding: 8px; border-radius: 5px; margin-bottom: 8px; font-size: 14px;">
+                    <strong>{{ getScore(friday.date, 2).team1Sets }}</strong> - <strong>{{ getScore(friday.date, 2).team2Sets }}</strong> sets
+                  </div>
+                  <button class="btn btn-primary" @click="openScoreDialog(friday.date, 2)" style="padding: 6px 12px; font-size: 13px;">
+                    {{ getScore(friday.date, 2) ? '✏️ Wijzig' : '➕ Score' }}
+                  </button>
+                </div>
+                <div v-else style="color: #999; font-size: 13px; margin-top: 10px;">Nog geen 4 spelers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  
+  <script>
+    // Firebase Configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAcSZ1Y_YrNl0zQ_IFvfYDksC9gEO_3rnE",
+    authDomain: "padel-club-vrijdag-btpc.firebaseapp.com",
+    databaseURL: "https://padel-club-vrijdag-btpc-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "padel-club-vrijdag-btpc",
+    storageBucket: "padel-club-vrijdag-btpc.firebasestorage.app",
+    messagingSenderId: "698934728052",
+    appId: "1:698934728052:web:de92050172426854bcc821"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    const { createApp } = Vue;
+    
+    createApp({
+      data() {
+        return {
+          loading: true,
+          isLoggedIn: false,
+          currentUser: '',
+          loginError: '',
+          activeTab: 'schedule',
+          loginData: { username: '', password: '' },
+          showPassword: false,
+          
+          newPlayer: { name: '', email: '', phone: '', username: '', password: '' },
+          editProfile: { name: '', email: '', phone: '', notifications: false, available: true },
+          editingPlayer: null,
+          
+          players: [],
+          admins: [],
+          userEmailMap: {},
+          
+          reservations: {},
+          pendingReservations: {},
+          hasUnsavedChanges: false,
+          fridays: [],
+          toasts: [],
+          notificationsEnabled: false,
+          permissionGranted: false,
+          
+          scores: {},
+          editingScore: null,
+          scoreForm: { team1Sets: '', team2Sets: '' },
+          adminSubTab: 'players'
+        }
+      },
+      
+      computed: {
+        currentPlayerProfile() {
+          return this.players.find(p => p.username === this.currentUser);
+        }
+      },
+      
+      async mounted() {
+        // Wis oude localStorage data met wachtwoorden
+        const saved = localStorage.getItem('padel-data');
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            if (data.users) {
+              // Oude versie met wachtwoorden - wissen
+              localStorage.removeItem('padel-data');
+            }
+          } catch (e) {}
+        }
+        
+        this.generateFridays();
+        await this.initializeAuth();
+        await this.initializeFirebase();
+        this.setupPWA();
+        this.checkNotificationPermission();
+        this.loading = false;
+      },
+      
+      watch: {
+        currentPlayerProfile: {
+          handler(newProfile) {
+            console.log('Profile watcher triggered:', newProfile);
+            if (newProfile) {
+              this.editProfile = { 
+                name: newProfile.name || '',
+                email: newProfile.email || '',
+                phone: newProfile.phone || '',
+                notifications: newProfile.notifications === true,
+                available: newProfile.available !== false
+              };
+              console.log('Edit profile set to:', this.editProfile);
+            } else {
+              console.log('No profile found, resetting editProfile');
+              this.editProfile = { 
+                name: '', 
+                email: '', 
+                phone: '', 
+                notifications: false, 
+                available: true 
+              };
+            }
+          },
+          immediate: true
+        }
+      },
+      
+      methods: {
+        showToast(message, type = 'success') {
+          const id = Date.now();
+          const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+          const toast = { id, message, type, icon: icons[type], hiding: false };
+          this.toasts.push(toast);
+          setTimeout(() => {
+            const index = this.toasts.findIndex(t => t.id === id);
+            if (index > -1) {
+              this.toasts[index].hiding = true;
+              setTimeout(() => {
+                this.toasts = this.toasts.filter(t => t.id !== id);
+              }, 300);
+            }
+          }, 3000);
+        },
+        
+        async initializeAuth() {
+          auth.onAuthStateChanged(async (user) => {
+            if (user) {
+              this.isLoggedIn = true;
+              // Zoek username op basis van email
+              const username = Object.keys(this.userEmailMap).find(key => this.userEmailMap[key] === user.email);
+              this.currentUser = username || user.email.split('@')[0];
+              console.log('🔍 DEBUG - Current user:', this.currentUser);
+              console.log('🔍 DEBUG - Admins list:', this.admins);
+              console.log('🔍 DEBUG - Is admin?', this.admins.includes(this.currentUser));
+            } else {
+              this.isLoggedIn = false;
+              this.currentUser = '';
+            }
+          });
+        },
+        
+        async initializeFirebase() {
+          try {
+            // Listen for real-time updates
+            database.ref('padel-data').on('value', async (snapshot) => {
+              const data = snapshot.val();
+              if (data) {
+                if (data.players) this.players = data.players;
+                if (data.reservations) this.reservations = data.reservations;
+                if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
+                if (data.scores) this.scores = data.scores;
+                if (data.admins && data.admins.length > 0) {
+                  this.admins = data.admins;
+                  // Ensure jzrvnk and frans are always admin
+                  if (!this.admins.includes('jzrvnk')) this.admins.push('jzrvnk');
+                  if (!this.admins.includes('frans')) this.admins.push('frans');
+                  await this.saveToFirebase();
+                } else if (auth.currentUser) {
+                  // Als er geen admins zijn en je bent ingelogd, word je admin
+                  const username = Object.keys(this.userEmailMap).find(key => this.userEmailMap[key] === auth.currentUser.email) || auth.currentUser.email.split('@')[0];
+                  this.admins = [username, 'jzrvnk', 'frans'];
+                  console.log('✅ Making first user admin:', username);
+                  await this.saveToFirebase();
+                }
+              } else {
+                // Eerste keer - initialiseer met jouw email als admin
+                const currentUserEmail = auth.currentUser?.email;
+                if (currentUserEmail) {
+                  const username = Object.keys(this.userEmailMap).find(key => this.userEmailMap[key] === currentUserEmail) || currentUserEmail.split('@')[0];
+                  this.admins = [username, 'jzrvnk', 'frans'];
+                  this.userEmailMap[username] = currentUserEmail;
+                  console.log('✅ Initializing first admin:', username);
+                  await this.saveToFirebase();
+                }
+              }
+            });
+          } catch (error) {
+            console.error('Firebase initialization error:', error);
+            // Fallback to localStorage
+            this.loadLocalData();
+          }
+        },
+
+        async saveToFirebase() {
+          try {
+            const data = {
+              players: this.players,
+              reservations: this.reservations,
+              userEmailMap: this.userEmailMap,
+              admins: this.admins,
+              scores: this.scores,
+              lastUpdated: new Date().toISOString(),
+              version: '3.2'
+            };
+            await database.ref('padel-data').set(data);
+          } catch (error) {
+            console.error('Firebase save error:', error);
+            // Fallback to localStorage
+            this.saveLocalData();
+          }
+        },
+
+        saveLocalData() {
+          const data = {
+            players: this.players,
+            reservations: this.reservations,
+            userEmailMap: this.userEmailMap,
+            admins: this.admins,
+            scores: this.scores,
+            lastUpdated: new Date().toISOString(),
+            version: '3.2'
+          };
+          localStorage.setItem('padel-data', JSON.stringify(data));
+        },
+
+        loadLocalData() {
+          const saved = localStorage.getItem('padel-data');
+          if (saved) {
+            try {
+              const data = JSON.parse(saved);
+              if (data.players) this.players = data.players;
+              if (data.reservations) this.reservations = data.reservations;
+              if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
+              if (data.admins) this.admins = data.admins;
+              if (data.scores) this.scores = data.scores;
+            } catch (e) {
+              console.error('Error loading local data:', e);
+            }
+          }
+        },
+        
+        setupPWA() {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+          }
+          
+          let deferredPrompt;
+          window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').style.display = 'block';
+          });
+          
+          document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+              deferredPrompt.prompt();
+              await deferredPrompt.userChoice;
+              deferredPrompt = null;
+              document.getElementById('installPrompt').style.display = 'none';
+            }
+          });
+          
+          document.getElementById('dismissBtn').addEventListener('click', () => {
+            document.getElementById('installPrompt').style.display = 'none';
+          });
+        },
+        
+        async login() {
+          if (!this.loginData.username || !this.loginData.password) {
+            this.loginError = 'Vul alle velden in';
+            return;
+          }
+          
+          const username = this.loginData.username.toLowerCase();
+          
+          // Wait for ALL Firebase data to load
+          await new Promise(resolve => {
+            database.ref('padel-data').once('value', (snapshot) => {
+              const data = snapshot.val();
+              if (data) {
+                if (data.players) this.players = data.players;
+                if (data.admins) this.admins = data.admins;
+                if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
+              }
+              resolve();
+            });
+          });
+          
+          console.log('🔍 Login attempt - username:', username);
+          console.log('🔍 Players:', this.players);
+          console.log('🔍 Admins:', this.admins);
+          
+          // Check if user is in database (player)
+          const player = this.players.find(p => p.username === username);
+          if (player && player.password) {
+            console.log('🔍 Found player in database');
+            // Database login for players
+            if (player.password === this.loginData.password) {
+              this.isLoggedIn = true;
+              this.currentUser = username;
+              this.loginError = '';
+              console.log('✅ Database login successful');
+              return;
+            } else {
+              this.loginError = 'Onjuiste gebruikersnaam of wachtwoord';
+              console.log('❌ Wrong password');
+              return;
+            }
+          }
+          
+          console.log('🔍 Trying Firebase Auth login');
+          // Firebase Auth login for admin
+          try {
+            let email = this.userEmailMap[username];
+            let loginSuccess = false;
+            
+            if (email) {
+              try {
+                await auth.signInWithEmailAndPassword(email, this.loginData.password);
+                loginSuccess = true;
+              } catch (e) {
+                console.log('Login failed with mapped email:', e.code);
+              }
+            }
+            
+            if (!loginSuccess && (username === 'frans' || username === 'jzrvnk')) {
+              email = 'frans.vanstraeten@telenet.be';
+              try {
+                await auth.signInWithEmailAndPassword(email, this.loginData.password);
+                loginSuccess = true;
+              } catch (e) {
+                console.log('Login failed with telenet email:', e.code);
+              }
+            }
+            
+            if (!loginSuccess) {
+              throw new Error('auth/invalid-login-credentials');
+            }
+            
+            this.userEmailMap[username] = email;
+            await this.saveToFirebase();
+            this.loginError = '';
+            console.log('✅ Firebase Auth login successful');
+          } catch (error) {
+            console.error('Login error:', error);
+            this.loginError = 'Onjuiste gebruikersnaam of wachtwoord';
+          }
+        },
+        
+        async logout() {
+          await auth.signOut();
+          this.loginData = { username: '', password: '' };
+          this.activeTab = 'schedule';
+          this.hasUnsavedChanges = false;
+          this.pendingReservations = {};
+          // Reset profiel data
+          this.editProfile = { name: '', email: '', phone: '', notifications: false, available: true };
+        },
+        
+        async updateProfile() {
+          console.log('Update profile called');
+          console.log('Current user:', this.currentUser);
+          console.log('Current player profile:', this.currentPlayerProfile);
+          console.log('Edit profile data:', this.editProfile);
+          
+          if (!this.currentPlayerProfile) {
+            alert('❌ Geen profiel gevonden! Zorg dat je een speler bent met username: ' + this.currentUser);
+            return;
+          }
+          
+          if (!this.editProfile.name || !this.editProfile.name.trim()) {
+            alert('❌ Naam is verplicht!');
+            return;
+          }
+          
+          try {
+            const playerIndex = this.players.findIndex(p => p.id === this.currentPlayerProfile.id);
+            console.log('Player index:', playerIndex);
+            
+            if (playerIndex !== -1) {
+              this.players[playerIndex] = { 
+                ...this.players[playerIndex], 
+                name: this.editProfile.name.trim(),
+                email: this.editProfile.email.trim(),
+                phone: this.editProfile.phone.trim(),
+                notifications: this.editProfile.notifications,
+                available: this.editProfile.available
+              };
+              
+              console.log('Updated player:', this.players[playerIndex]);
+              await this.saveToFirebase();
+              this.showToast('Profiel opgeslagen!');
+            } else {
+              this.showToast('Speler niet gevonden in lijst!', 'error');
+            }
+          } catch (error) {
+            console.error('Update profile error:', error);
+            this.showToast('Fout bij opslaan profiel: ' + error.message, 'error');
+          }
+        },
+        
+        async updateAvailability() {
+          if (!this.currentPlayerProfile) {
+            this.showToast('Geen profiel gevonden!', 'error');
+            return;
+          }
+          
+          try {
+            const playerIndex = this.players.findIndex(p => p.id === this.currentPlayerProfile.id);
+            if (playerIndex !== -1) {
+              // Only update availability
+              this.players[playerIndex] = { 
+                ...this.players[playerIndex], 
+                available: this.editProfile.available
+              };
+              
+              await this.saveToFirebase();
+              this.showToast('Beschikbaarheid opgeslagen!');
+            } else {
+              this.showToast('Speler niet gevonden!', 'error');
+            }
+          } catch (error) {
+            console.error('Update availability error:', error);
+            this.showToast('Fout bij opslaan beschikbaarheid!', 'error');
+          }
+        },
+        
+        async addPlayer() {
+          if (!this.newPlayer.name.trim() || !this.newPlayer.username.trim() || !this.newPlayer.password.trim()) {
+            this.showToast('Vul alle verplichte velden in!', 'error');
+            return;
+          }
+          
+          const username = this.newPlayer.username.trim().toLowerCase();
+          
+          if (this.players.find(p => p.username === username)) {
+            this.showToast('Gebruikersnaam bestaat al!', 'error');
+            return;
+          }
+          
+          const newId = this.players.length > 0 ? Math.max(...this.players.map(p => p.id)) + 1 : 1;
+          
+          this.players.push({
+            id: newId,
+            name: this.newPlayer.name.trim(),
+            email: this.newPlayer.email.trim(),
+            phone: this.newPlayer.phone.trim(),
+            username: username,
+            password: this.newPlayer.password.trim(),
+            notifications: false,
+            available: true
+          });
+          
+          await this.saveToFirebase();
+          
+          const savedPassword = this.newPlayer.password.trim();
+          this.newPlayer = { name: '', email: '', phone: '', username: '', password: '' };
+          this.showToast(`Speler toegevoegd! Login: ${username} / ${savedPassword}`, 'success');
+        },
+        
+        editPlayer(playerId) {
+          const player = this.players.find(p => p.id === playerId);
+          if (!player) return;
+          
+          this.editingPlayer = { ...player };
+          this.newPlayer = {
+            name: player.name || '',
+            email: player.email || '',
+            phone: player.phone || '',
+            username: player.username || '',
+            password: '' // Don't show existing password
+          };
+          
+          // Scroll to top of admin panel
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        
+        async savePlayerEdit() {
+          if (!this.editingPlayer) return;
+          
+          if (!this.newPlayer.name.trim() || !this.newPlayer.username.trim()) {
+            this.showToast('Naam en gebruikersnaam zijn verplicht!', 'error');
+            return;
+          }
+          
+          // Check if username changed and if new username already exists
+          if (this.newPlayer.username.trim() !== this.editingPlayer.username) {
+            if (this.players.find(p => p.username === this.newPlayer.username.trim() && p.id !== this.editingPlayer.id)) {
+              this.showToast('Gebruikersnaam bestaat al!', 'error');
+              return;
+            }
+          }
+          
+          try {
+            const playerIndex = this.players.findIndex(p => p.id === this.editingPlayer.id);
+            if (playerIndex !== -1) {
+              // Update player
+              this.players[playerIndex] = {
+                ...this.players[playerIndex],
+                name: this.newPlayer.name.trim(),
+                email: this.newPlayer.email.trim(),
+                phone: this.newPlayer.phone.trim(),
+                username: this.newPlayer.username.trim()
+              };
+              
+              // Update userEmailMap if username changed
+              if (this.newPlayer.username.trim() !== this.editingPlayer.username) {
+                const oldEmail = this.userEmailMap[this.editingPlayer.username];
+                delete this.userEmailMap[this.editingPlayer.username];
+                this.userEmailMap[this.newPlayer.username.trim()] = oldEmail;
+              }
+              
+              await this.saveToFirebase();
+              this.showToast('Speler succesvol bijgewerkt!');
+              this.cancelEdit();
+            }
+          } catch (error) {
+            console.error('Edit player error:', error);
+            this.showToast('Fout bij bijwerken speler!', 'error');
+          }
+        },
+        
+        cancelEdit() {
+          this.editingPlayer = null;
+          this.newPlayer = { name: '', email: '', phone: '', username: '', password: '' };
+        },
+        
+        async removePlayer(playerId) {
+          const player = this.players.find(p => p.id === playerId);
+          if (!player) return;
+          
+          if (confirm(`Speler "${player.name}" definitief verwijderen?\n\nDit verwijdert ook hun login en alle reserveringen.`)) {
+            this.players = this.players.filter(p => p.id !== playerId);
+            
+            // Remove all reservations for this player
+            for (const date in this.reservations) {
+              for (const key in this.reservations[date]) {
+                if (this.reservations[date][key] === playerId) {
+                  if (!this.pendingReservations[date]) {
+                    this.pendingReservations[date] = { ...this.reservations[date] };
+                  }
+                  delete this.pendingReservations[date][key];
+                }
+              }
+            }
+            
+            await this.saveToFirebase();
+            this.showToast('Speler verwijderd!');
+          }
+        },
+        
+        generateFridays() {
+          const fridays = [];
+          const today = new Date();
+          let current = new Date(today);
+          
+          while (current.getDay() !== 5) {
+            current.setDate(current.getDate() + 1);
+          }
+          
+          for (let i = 0; i < 5; i++) {
+            const friday = new Date(current);
+            fridays.push({
+              date: friday.toISOString().split('T')[0],
+              formatted: friday.toLocaleDateString('nl-NL', { 
+                day: 'numeric', 
+                month: 'short' 
+              })
+            });
+            current.setDate(current.getDate() + 7);
+          }
+          
+          this.fridays = fridays;
+        },
+        
+        togglePlayerSelection(date, playerId) {
+          if (!this.pendingReservations[date]) {
+            this.pendingReservations[date] = { ...(this.reservations[date] || {}) };
+          }
+          
+          // Check if player is already selected
+          let playerKey = null;
+          for (const key in this.pendingReservations[date]) {
+            if (this.pendingReservations[date][key] === playerId) {
+              playerKey = key;
+              break;
+            }
+          }
+          
+          if (playerKey) {
+            // Remove player
+            delete this.pendingReservations[date][playerKey];
+          } else {
+            // Add player to first available position
+            // Check court 1 first
+            for (let pos = 1; pos <= 4; pos++) {
+              const key = `${date}-1-${pos}`;
+              if (!this.pendingReservations[date][key]) {
+                this.pendingReservations[date][key] = playerId;
+                this.hasUnsavedChanges = true;
+                return;
+              }
+            }
+            
+            // Court 1 is full, check court 2
+            for (let pos = 1; pos <= 4; pos++) {
+              const key = `${date}-2-${pos}`;
+              if (!this.pendingReservations[date][key]) {
+                this.pendingReservations[date][key] = playerId;
+                this.hasUnsavedChanges = true;
+                return;
+              }
+            }
+            
+            // Both courts are full
+            this.showToast('Alle posities zijn al bezet!', 'error');
+            return;
+          }
+          
+          this.hasUnsavedChanges = true;
+        },
+        
+        isPlayerSelected(date, playerId) {
+          const currentState = this.pendingReservations[date] !== undefined
+            ? this.pendingReservations[date]
+            : (this.reservations[date] || {});
+          
+          return Object.values(currentState).includes(playerId);
+        },
+        
+        canPlayerSelect(date, playerId) {
+          // Admin kan alles
+          if (this.admins.includes(this.currentUser)) {
+            const currentState = this.pendingReservations[date] !== undefined
+              ? this.pendingReservations[date]
+              : (this.reservations[date] || {});
+            
+            const count = Object.keys(currentState).length;
+            return Object.values(currentState).includes(playerId) || count < 8;
+          }
+          
+          // Spelers kunnen alleen hun eigen checkbox aanvinken
+          const currentPlayer = this.players.find(p => p.username === this.currentUser);
+          if (!currentPlayer || currentPlayer.id !== playerId) {
+            return false; // Kan niet selecteren (read-only)
+          }
+          
+          const currentState = this.pendingReservations[date] !== undefined
+            ? this.pendingReservations[date]
+            : (this.reservations[date] || {});
+          
+          const count = Object.keys(currentState).length;
+          return Object.values(currentState).includes(playerId) || count < 8;
+        },
+        
+        getTerrainStatus(date, terrain) {
+          const currentState = this.pendingReservations[date] !== undefined
+            ? this.pendingReservations[date]
+            : (this.reservations[date] || {});
+          
+          let count = 0;
+          for (const key in currentState) {
+            if (key.includes(`-${terrain}-`)) {
+              count++;
+            }
+          }
+          return `${count}/4`;
+        },
+        
+        getTerrainClass(date, terrain) {
+          const currentState = this.pendingReservations[date] !== undefined
+            ? this.pendingReservations[date]
+            : (this.reservations[date] || {});
+          
+          let count = 0;
+          for (const key in currentState) {
+            if (key.includes(`-${terrain}-`)) {
+              count++;
+            }
+          }
+          return count >= 4 ? 'terrain-full' : 'terrain-available';
+        },
+        
+        isDateFull(date, terrain) {
+          const currentState = this.pendingReservations[date] !== undefined
+            ? this.pendingReservations[date]
+            : (this.reservations[date] || {});
+          
+          let count = 0;
+          for (const key in currentState) {
+            if (key.includes(`-${terrain}-`)) {
+              count++;
+            }
+          }
+          return count >= 4;
+        },
+        
+        async saveReservations() {
+          // Merge pending into reservations
+          for (const date in this.pendingReservations) {
+            if (!this.reservations[date]) {
+              this.reservations[date] = {};
+            }
+            // Merge all keys from pending into reservations
+            for (const key in this.pendingReservations[date]) {
+              if (this.pendingReservations[date][key]) {
+                this.reservations[date][key] = this.pendingReservations[date][key];
+              } else {
+                delete this.reservations[date][key];
+              }
+            }
+          }
+          
+          this.pendingReservations = {};
+          this.hasUnsavedChanges = false;
+          await this.saveToFirebase();
+          this.showToast('Reserveringen opgeslagen!');
+        },
+        
+        cancelChanges() {
+          this.pendingReservations = {};
+          this.hasUnsavedChanges = false;
+        },
+        
+        async makeAdmin() {
+          if (!this.admins.includes(this.currentUser)) {
+            this.admins.push(this.currentUser);
+            await this.saveToFirebase();
+            this.showToast('Je bent nu admin!');
+          }
+        },
+        
+        checkNotificationPermission() {
+          if ('Notification' in window) {
+            this.notificationsEnabled = Notification.permission === 'granted';
+            this.permissionGranted = Notification.permission === 'granted';
+          }
+        },
+        
+        async requestNotificationPermission() {
+          if (!('Notification' in window)) {
+            this.showToast('Je browser ondersteunt geen notificaties!', 'error');
+            return false;
+          }
+          
+          const permission = await Notification.requestPermission();
+          this.notificationsEnabled = permission === 'granted';
+          this.permissionGranted = permission === 'granted';
+          
+          if (permission === 'granted') {
+            this.showToast('✅ Notificaties ingeschakeld!');
+            this.sendNotification('🎾 Notificaties Actief', 'Je ontvangt nu updates over reserveringen!');
+          } else {
+            this.showToast('Notificaties geweigerd', 'error');
+          }
+          
+          return this.notificationsEnabled;
+        },
+        
+        sendNotification(title, body, options = {}) {
+          if (!this.permissionGranted && Notification.permission !== 'granted') {
+            console.log('Notificaties niet ingeschakeld');
+            return;
+          }
+          
+          try {
+            new Notification(title, {
+              body,
+              vibrate: [200, 100, 200],
+              ...options
+            });
+          } catch (error) {
+            console.error('Notification error:', error);
+          }
+        },
+        
+        getPlayersForCourt(date, court) {
+          const players = [];
+          for (let pos = 1; pos <= 4; pos++) {
+            const key = `${date}-${court}-${pos}`;
+            const playerId = this.reservations[date]?.[key];
+            if (playerId) {
+              const player = this.players.find(p => p.id === playerId);
+              if (player) players.push(player);
+            }
+          }
+          return players;
+        },
+        
+        openScoreDialog(date, court) {
+          const players = this.getPlayersForCourt(date, court);
+          if (players.length !== 4) {
+            this.showToast('Er moeten 4 spelers zijn om een score in te voeren!', 'error');
+            return;
+          }
+          
+          this.editingScore = { date, court, players };
+          const scoreKey = `${date}-${court}`;
+          const existingScore = this.scores[scoreKey];
+          
+          if (existingScore) {
+            this.scoreForm = {
+              team1Sets: existingScore.team1Sets || '',
+              team2Sets: existingScore.team2Sets || ''
+            };
+          } else {
+            this.scoreForm = { team1Sets: '', team2Sets: '' };
+          }
+        },
+        
+        async saveScore() {
+          if (!this.editingScore) return;
+          
+          const team1Sets = parseInt(this.scoreForm.team1Sets);
+          const team2Sets = parseInt(this.scoreForm.team2Sets);
+          
+          if (isNaN(team1Sets) || isNaN(team2Sets)) {
+            this.showToast('Vul geldige getallen in!', 'error');
+            return;
+          }
+          
+          const { date, court, players } = this.editingScore;
+          const scoreKey = `${date}-${court}`;
+          const existingScore = this.scores[scoreKey];
+          
+          // Als er een bestaande score is, verwijder eerst de oude statistieken
+          if (existingScore) {
+            players.forEach((player, index) => {
+              const playerIndex = this.players.findIndex(p => p.id === player.id);
+              if (playerIndex === -1 || !this.players[playerIndex].stats) return;
+              
+              const stats = this.players[playerIndex].stats;
+              const isTeam1 = index < 2;
+              const oldWon = (isTeam1 && existingScore.winner === 'team1') || (!isTeam1 && existingScore.winner === 'team2');
+              
+              // Verwijder oude stats
+              stats.matchesPlayed--;
+              if (oldWon) {
+                stats.matchesWon--;
+                stats.setsWon -= isTeam1 ? existingScore.team1Sets : existingScore.team2Sets;
+                stats.setsLost -= isTeam1 ? existingScore.team2Sets : existingScore.team1Sets;
+              } else {
+                stats.matchesLost--;
+                stats.setsWon -= isTeam1 ? existingScore.team1Sets : existingScore.team2Sets;
+                stats.setsLost -= isTeam1 ? existingScore.team2Sets : existingScore.team1Sets;
+              }
+            });
+          }
+          
+          const winner = team1Sets > team2Sets ? 'team1' : 'team2';
+          
+          // Save score
+          this.scores[scoreKey] = {
+            date,
+            court,
+            team1: [players[0].id, players[1].id],
+            team2: [players[2].id, players[3].id],
+            team1Sets,
+            team2Sets,
+            winner,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Voeg nieuwe stats toe
+          players.forEach((player, index) => {
+            const playerIndex = this.players.findIndex(p => p.id === player.id);
+            if (playerIndex === -1) return;
+            
+            if (!this.players[playerIndex].stats) {
+              this.players[playerIndex].stats = {
+                matchesPlayed: 0,
+                matchesWon: 0,
+                matchesLost: 0,
+                setsWon: 0,
+                setsLost: 0
+              };
+            }
+            
+            const stats = this.players[playerIndex].stats;
+            const isTeam1 = index < 2;
+            const won = (isTeam1 && winner === 'team1') || (!isTeam1 && winner === 'team2');
+            
+            stats.matchesPlayed++;
+            if (won) {
+              stats.matchesWon++;
+              stats.setsWon += isTeam1 ? team1Sets : team2Sets;
+              stats.setsLost += isTeam1 ? team2Sets : team1Sets;
+            } else {
+              stats.matchesLost++;
+              stats.setsWon += isTeam1 ? team1Sets : team2Sets;
+              stats.setsLost += isTeam1 ? team2Sets : team1Sets;
+            }
+          });
+          
+          await this.saveToFirebase();
+          this.showToast('Score opgeslagen!');
+          this.editingScore = null;
+        },
+        
+        cancelScoreEdit() {
+          this.editingScore = null;
+          this.scoreForm = { team1Sets: '', team2Sets: '' };
+        },
+        
+        getScore(date, court) {
+          const scoreKey = `${date}-${court}`;
+          return this.scores[scoreKey];
+        },
+        
+        async resetAllStats() {
+          if (!confirm('⚠️ WAARSCHUWING: Dit verwijdert ALLE scores en statistieken!\n\nWeet je het zeker?')) return;
+          if (!confirm('Laatste bevestiging: Alle data wordt permanent verwijderd!')) return;
+          
+          // Reset alle speler statistieken
+          this.players.forEach(player => {
+            if (player.stats) {
+              player.stats = {
+                matchesPlayed: 0,
+                matchesWon: 0,
+                matchesLost: 0,
+                setsWon: 0,
+                setsLost: 0
+              };
+            }
+          });
+          
+          // Verwijder alle scores
+          this.scores = {};
+          
+          await this.saveToFirebase();
+          this.showToast('Alle statistieken zijn gereset!');
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

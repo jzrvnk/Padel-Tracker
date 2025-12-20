@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔔 Test Notificaties</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+    button { padding: 15px 30px; font-size: 16px; margin: 10px; cursor: pointer; background: #2e7d32; color: white; border: none; border-radius: 8px; }
+    button:hover { background: #1b5e20; }
+    .status { padding: 15px; margin: 20px 0; border-radius: 8px; background: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>🔔 Test Push Notificaties</h1>
+  
+  <div class="status" id="status">
+    Status: Wachten...
+  </div>
+  
+  <button onclick="requestPermission()">1️⃣ Vraag Toestemming</button>
+  <button onclick="sendTestNotification()">2️⃣ Stuur Test Notificatie</button>
+  <button onclick="sendReservationNotification()">3️⃣ Stuur Reservatie Notificatie</button>
+  
+  <script>
+    let permissionGranted = false;
+    
+    function updateStatus(message, color = '#e3f2fd') {
+      document.getElementById('status').innerHTML = message;
+      document.getElementById('status').style.background = color;
+      console.log('Status:', message);
+    }
+    
+    async function requestPermission() {
+      console.log('requestPermission called');
+      console.log('Notification support:', 'Notification' in window);
+      console.log('Current permission:', Notification.permission);
+      
+      if (!('Notification' in window)) {
+        updateStatus('❌ Je browser ondersteunt geen notificaties!', '#ffebee');
+        return;
+      }
+      
+      try {
+        const permission = await Notification.requestPermission();
+        console.log('Permission result:', permission);
+        permissionGranted = (permission === 'granted');
+        
+        if (permission === 'granted') {
+          updateStatus('✅ Toestemming verleend! Je kunt nu notificaties ontvangen.', '#e8f5e9');
+          // Stuur direct een test notificatie
+          setTimeout(() => sendTestNotification(), 500);
+        } else if (permission === 'denied') {
+          updateStatus('❌ Toestemming geweigerd. Ga naar browser instellingen om dit te wijzigen.', '#ffebee');
+        } else {
+          updateStatus('⚠️ Toestemming uitgesteld.', '#fff3cd');
+        }
+      } catch (error) {
+        console.error('Error requesting permission:', error);
+        updateStatus('❌ Fout: ' + error.message, '#ffebee');
+      }
+    }
+    
+    function sendTestNotification() {
+      console.log('sendTestNotification called');
+      console.log('Permission status:', Notification.permission);
+      console.log('permissionGranted flag:', permissionGranted);
+      
+      if (!permissionGranted && Notification.permission !== 'granted') {
+        updateStatus('❌ Eerst toestemming vragen! Huidige status: ' + Notification.permission, '#ffebee');
+        return;
+      }
+      
+      try {
+        const notification = new Notification('🎾 Test Notificatie', {
+          body: 'Dit is een test notificatie van de Padel app!',
+          vibrate: [200, 100, 200]
+        });
+        
+        console.log('Notification created:', notification);
+        updateStatus('✅ Test notificatie verstuurd!', '#e8f5e9');
+      } catch (error) {
+        console.error('Error sending notification:', error);
+        updateStatus('❌ Fout bij versturen: ' + error.message, '#ffebee');
+      }
+    }
+    
+    function sendReservationNotification() {
+      console.log('sendReservationNotification called');
+      console.log('Permission status:', Notification.permission);
+      console.log('permissionGranted flag:', permissionGranted);
+      
+      if (!permissionGranted && Notification.permission !== 'granted') {
+        updateStatus('❌ Eerst toestemming vragen! Huidige status: ' + Notification.permission, '#ffebee');
+        return;
+      }
+      
+      try {
+        const notification = new Notification('🎾 Nieuwe Reservatie', {
+          body: 'Frans heeft zich ingeschreven voor vrijdag 20 dec',
+          vibrate: [200, 100, 200],
+          tag: 'reservation'
+        });
+        
+        console.log('Notification created:', notification);
+        updateStatus('✅ Reservatie notificatie verstuurd!', '#e8f5e9');
+      } catch (error) {
+        console.error('Error sending notification:', error);
+        updateStatus('❌ Fout bij versturen: ' + error.message, '#ffebee');
+      }
+    }
+    
+    // Check huidige status bij laden
+    window.onload = () => {
+      if (!('Notification' in window)) {
+        updateStatus('❌ Je browser ondersteunt geen notificaties!', '#ffebee');
+      } else if (Notification.permission === 'granted') {
+        permissionGranted = true;
+        updateStatus('✅ Notificaties zijn ingeschakeld!', '#e8f5e9');
+      } else if (Notification.permission === 'denied') {
+        updateStatus('❌ Notificaties zijn geblokkeerd. Wijzig dit in browser instellingen.', '#ffebee');
+      } else {
+        updateStatus('⚠️ Klik op "Vraag Toestemming" om te beginnen.', '#fff3cd');
+      }
+    };
+  </script>
+</body>
+</html>
