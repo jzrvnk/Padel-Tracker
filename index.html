@@ -24,7 +24,7 @@
     .courts-container { background: white; border-radius: 15px; padding: 30px; margin-bottom: 20px; }
     .date-header { text-align: center; color: #2e7d32; font-size: 24px; font-weight: bold; margin-bottom: 40px; }
     
-    .courts-wrapper { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+    .courts-wrapper { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
     .court { 
       background: #4a7c59;
       border: 4px solid white; 
@@ -33,6 +33,14 @@
       height: 400px;
       position: relative;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+    
+    @media (max-width: 480px) {
+      .courts-wrapper { gap: 5px; }
+      .court { width: 150px; height: 300px; }
+      .court-title { font-size: 12px; padding: 3px 10px; }
+      .player-slot { font-size: 10px; }
     }
     
     .court-title { 
