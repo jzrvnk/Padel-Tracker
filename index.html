@@ -138,9 +138,9 @@
 
     <div v-if="isLoggedIn" class="app-container">
       <div class="header">
-        <h1>🎾 Padel Tracker</h1>
+        <h1 style="font-size: 20px;">🎾 Padel Tracker</h1>
         <div>
-          <span style="font-weight: bold;">{{ currentUserDisplayName }}</span>
+          <span style="font-weight: bold;">Dag {{ currentUserFirstName }}</span>
           <button @click="logout" style="background: none; border: none; color: #f44336; font-size: 20px; margin-left: 10px; cursor: pointer; padding: 5px;">❌</button>
         </div>
       </div>
@@ -421,6 +421,16 @@
         currentUserDisplayName() {
           const player = this.getCurrentPlayer();
           return player ? player.name : this.currentUser;
+        },
+        
+        currentUserFirstName() {
+          const player = this.getCurrentPlayer();
+          if (player) {
+            // Extract first name from full name
+            const firstName = player.name.split(' ')[0];
+            return firstName;
+          }
+          return this.currentUser;
         },
         
         leaderboard() {
