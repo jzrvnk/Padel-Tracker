@@ -43,6 +43,17 @@
       .player-slot { font-size: 10px; }
     }
     
+    .courts-wrapper { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+    .court { 
+      background: #4a7c59;
+      border: 4px solid white; 
+      border-radius: 8px;
+      width: 200px;
+      height: 400px;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
     .court-title { 
       position: absolute;
       top: -35px;
@@ -135,7 +146,7 @@
       </div>
 
       <div class="nav-tabs">
-        <button class="nav-tab" :class="{ active: activeTab === 'schedule' }" @click="activeTab = 'schedule'">📅 Reserveringen</button>
+        <button class="nav-tab" :class="{ active: activeTab === 'schedule' }" @click="activeTab = 'schedule'">📅 Reservaties</button>
         <button class="nav-tab" :class="{ active: activeTab === 'stats' }" @click="activeTab = 'stats'">🏆 Statistieken</button>
         <button class="nav-tab" :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">👤 Profiel</button>
         <button v-if="admins.includes(currentUser)" class="nav-tab" :class="{ active: activeTab === 'admin' }" @click="activeTab = 'admin'">⚙️ Beheer</button>
