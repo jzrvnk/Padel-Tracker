@@ -204,11 +204,11 @@
       </div>
 
       <div v-if="activeTab === 'stats'" class="courts-container">
-        <div class="date-header">🏆 Leaderboard</div>
+        <div class="date-header">🏆 Klassement</div>
         <div style="padding: 20px;">
           <div v-if="leaderboard.length === 0" style="text-align: center; padding: 40px; color: #666;">
             <h3>Nog geen statistieken</h3>
-            <p>Speel matches en voer scores in via het admin panel!</p>
+            <p>Speel matchen en voer scores in via het admin panel!</p>
           </div>
           <div v-else style="max-width: 800px; margin: 0 auto;">
             <div v-for="(player, index) in leaderboard" :key="player.id" 
@@ -227,7 +227,7 @@
               </div>
               <div style="text-align: right;">
                 <div style="font-size: 28px; font-weight: bold; color: #2e7d32;">{{ player.winRate }}%</div>
-                <div style="font-size: 12px; color: #666;">{{ player.stats.matchesPlayed }} matches</div>
+                <div style="font-size: 12px; color: #666;">{{ player.stats.matchesPlayed }} matchen</div>
               </div>
             </div>
           </div>
@@ -243,7 +243,7 @@
               <h3 style="color: #2e7d32; margin-bottom: 15px;">🏆 Jouw Statistieken</h3>
               <div v-if="getCurrentPlayer().stats && getCurrentPlayer().stats.matchesPlayed > 0" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
-                  <div style="font-size: 14px; color: #666;">Matches Gespeeld</div>
+                  <div style="font-size: 14px; color: #666;">Matchen Gespeeld</div>
                   <div style="font-size: 24px; font-weight: bold; color: #2e7d32;">{{ getCurrentPlayer().stats.matchesPlayed }}</div>
                 </div>
                 <div>
@@ -357,14 +357,17 @@
         <h1 style="text-align: center; color: #2e7d32; margin-bottom: 30px;">🎾 Padel Club</h1>
         <div style="margin-bottom: 15px;">
           <label style="display: block; margin-bottom: 8px; color: #2e7d32; font-weight: bold;">Gebruikersnaam</label>
-          <select v-model="loginData.username" style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+          <select v-model="loginData.username" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px;">
             <option value="">-- Kies je naam --</option>
             <option v-for="player in sortedPlayers" :key="player.id" :value="player.username">
               {{ player.name }}
             </option>
           </select>
         </div>
-        <input v-model="loginData.password" placeholder="Wachtwoord" type="password" style="width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #e0e0e0; border-radius: 10px;" @keyup.enter="login">
+        <div style="position: relative; margin-bottom: 15px;">
+          <input v-model="loginData.password" placeholder="Wachtwoord" :type="showPassword ? 'text' : 'password'" style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; padding-right: 50px;" @keyup.enter="login">
+          <button @click="showPassword = !showPassword" type="button" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; cursor: pointer;">{{ showPassword ? '🙈' : '👁️' }}</button>
+        </div>
         <button class="btn btn-primary" @click="login" style="width: 100%;">Inloggen</button>
         <div v-if="loginError" style="color: red; text-align: center; margin-top: 10px;">{{ loginError }}</div>
       </div>
@@ -409,7 +412,7 @@
           fridays: [],
           profileForm: { name: '', email: '', phone: '', password: '' },
           toasts: [],
-          scores: {}
+          showPassword: false,
         }
       },
       
