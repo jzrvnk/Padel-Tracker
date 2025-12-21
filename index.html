@@ -13,7 +13,7 @@
     .app-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
     .header { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
     
-    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; position: sticky; top: 80px; z-index: 99; background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%); padding: 10px 0; }
     .nav-tab { padding: 10px 20px; background: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
     .nav-tab.active { background: #2e7d32; color: white; }
     
@@ -149,7 +149,7 @@
       <div class="header">
         <h1 style="font-size: 20px;">🎾 Padel Tracker</h1>
         <div>
-          <span style="font-weight: bold;">Dag {{ currentUserFirstName }}</span>
+          <span style="font-weight: bold; cursor: pointer;" @click="activeTab = 'profile'">Dag {{ currentUserFirstName }}</span>
           <button @click="logout" style="background: none; border: none; color: #f44336; font-size: 20px; margin-left: 10px; cursor: pointer; padding: 5px;">❌</button>
         </div>
       </div>
@@ -157,7 +157,6 @@
       <div class="nav-tabs">
         <button class="nav-tab" :class="{ active: activeTab === 'schedule' }" @click="activeTab = 'schedule'">📅 Reservaties</button>
         <button class="nav-tab" :class="{ active: activeTab === 'stats' }" @click="activeTab = 'stats'">🏆 Statistieken</button>
-        <button class="nav-tab" :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">👤 Profiel</button>
         <button v-if="admins.includes(currentUser)" class="nav-tab" :class="{ active: activeTab === 'admin' }" @click="activeTab = 'admin'">⚙️ Beheer</button>
       </div>
 
