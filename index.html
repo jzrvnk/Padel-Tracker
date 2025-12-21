@@ -164,7 +164,7 @@
         
         <div class="courts-wrapper">
           <div class="court">
-            <div class="court-title">Terrein 1</div>
+            <div class="court-title">Veld 1</div>
             <div class="court-line-v"></div>
             <div class="court-line-h"></div>
             <div class="court-grid">
@@ -177,7 +177,7 @@
           </div>
           
           <div class="court">
-            <div class="court-title">Terrein 2</div>
+            <div class="court-title">Veld 2</div>
             <div class="court-line-v"></div>
             <div class="court-line-h"></div>
             <div class="court-grid">
@@ -326,19 +326,19 @@
             </div>
           </div>
           
-          <h3 style="color: #2e7d32; margin: 30px 0 15px;">📅 Reserveringen Beheer</h3>
+          <h3 style="color: #2e7d32; margin: 30px 0 15px;">📅 Reservaties Beheer</h3>
           <div v-for="friday in fridays" :key="friday.date" style="margin-bottom: 30px; background: #f5f5f5; padding: 20px; border-radius: 8px;">
             <h4 style="color: #2e7d32; margin-bottom: 15px;">{{ friday.formatted }}</h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
               <div>
-                <strong>Terrein 1:</strong>
+                <strong>Veld 1:</strong>
                 <div v-for="pos in 4" :key="pos" style="margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                   <span>Positie {{ pos }}: {{ getPlayerAtPosition(friday.date, 1, pos) || '(leeg)' }}</span>
                   <button v-if="getPlayerAtPosition(friday.date, 1, pos)" class="btn btn-secondary" @click="removeReservation(friday.date, 1, pos)" style="padding: 5px 10px; font-size: 12px; background: #d32f2f;">❌</button>
                 </div>
               </div>
               <div>
-                <strong>Terrein 2:</strong>
+                <strong>Veld 2:</strong>
                 <div v-for="pos in 4" :key="pos" style="margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                   <span>Positie {{ pos }}: {{ getPlayerAtPosition(friday.date, 2, pos) || '(leeg)' }}</span>
                   <button v-if="getPlayerAtPosition(friday.date, 2, pos)" class="btn btn-secondary" @click="removeReservation(friday.date, 2, pos)" style="padding: 5px 10px; font-size: 12px; background: #d32f2f;">❌</button>
@@ -801,7 +801,7 @@
           this.pendingReservations = {};
           this.hasUnsavedChanges = false;
           await this.saveToFirebase();
-          this.showToast('Reserveringen opgeslagen!');
+          this.showToast('Reservaties opgeslagen!');
         },
         
         cancelChanges() {
