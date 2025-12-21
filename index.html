@@ -107,6 +107,7 @@
     }
     
     .player-slot.filled { background: rgba(255,255,255,0.9); color: #2e7d32; border: 2px solid white; }
+    .player-slot.random-selected { background: rgba(244, 67, 54, 0.9); color: white; border: 2px solid #d32f2f; font-weight: bold; }
     
     .register-section { text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; }
     
@@ -186,7 +187,10 @@
             <div class="court-grid">
               <div v-for="pos in 4" :key="pos" 
                    class="player-slot"
-                   :class="{ filled: getPlayerAtPosition(friday.date, 1, pos) }">
+                   :class="{ 
+                     filled: getPlayerAtPosition(friday.date, 1, pos),
+                     'random-selected': isRandomSelected(friday.date, 1, pos)
+                   }">
                 {{ getPlayerAtPosition(friday.date, 1, pos) || '—' }}
               </div>
             </div>
@@ -199,7 +203,10 @@
             <div class="court-grid">
               <div v-for="pos in 4" :key="pos" 
                    class="player-slot"
-                   :class="{ filled: getPlayerAtPosition(friday.date, 2, pos) }">
+                   :class="{ 
+                     filled: getPlayerAtPosition(friday.date, 2, pos),
+                     'random-selected': isRandomSelected(friday.date, 2, pos)
+                   }">
                 {{ getPlayerAtPosition(friday.date, 2, pos) || '—' }}
               </div>
             </div>
@@ -423,6 +430,7 @@
           profileForm: { name: '', email: '', phone: '', password: '' },
           toasts: [],
           showPassword: false,
+          randomSelectedPlayers: {}, // Stores random selected players per date/court
         }
       },
       
@@ -762,6 +770,9 @@
             const selectedPosition = court1Positions[randomIndex];
             this.pendingReservations[date][selectedPosition.key] = currentPlayer.id;
             this.hasUnsavedChanges = true;
+            
+            // Check if court 1 is now full (4 players) and select random player
+            this.checkAndSelectRandomPlayer(date, 1);
             return;
           }
           
@@ -780,6 +791,9 @@
             const selectedPosition = court2Positions[randomIndex];
             this.pendingReservations[date][selectedPosition.key] = currentPlayer.id;
             this.hasUnsavedChanges = true;
+            
+            // Check if court 2 is now full (4 players) and select random player
+            this.checkAndSelectRandomPlayer(date, 2);
             return;
           }
           
@@ -1073,6 +1087,36 @@
           await this.saveToFirebase();
           this.profileForm.password = '';
           this.showToast('Profiel succesvol bijgewerkt!');
+        },
+        
+        checkAndSelectRandomPlayer(date, court) {
+          // Count filled positions for this court
+          let filledCount = 0;
+          for (let pos = 1; pos <= 4; pos++) {
+            const key = `${date}-${court}-${pos}`;
+            if (this.pendingReservations[date][key]) {
+              filledCount++;
+            }
+          }
+          
+          // If court is full (4 players), select a random player to mark in red
+          if (filledCount === 4) {
+            const randomPosition = Math.floor(Math.random() * 4) + 1;
+            const courtKey = `${date}-${court}`;
+            
+            if (!this.randomSelectedPlayers[courtKey]) {
+              this.randomSelectedPlayers[courtKey] = randomPosition;
+              
+              // Show toast notification
+              const playerAtPosition = this.getPlayerAtPosition(date, court, randomPosition);
+              this.showToast(`🎯 ${playerAtPosition} is geselecteerd voor veld ${court}!`, 'info');
+            }
+          }
+        },
+        
+        isRandomSelected(date, court, position) {
+          const courtKey = `${date}-${court}`;
+          return this.randomSelectedPlayers[courtKey] === position;
         }
       }
     }).mount('#app');
