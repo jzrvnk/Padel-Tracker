@@ -751,50 +751,78 @@
             return;
           }
           
+          // Check if player is already registered for this date
+          if (this.isPlayerRegistered(date)) {
+            this.showToast('Je bent al ingeschreven voor deze datum!', 'error');
+            return;
+          }
+          
           if (!this.pendingReservations[date]) {
             this.pendingReservations[date] = { ...(this.reservations[date] || {}) };
           }
           
-          // Check court 1 first
-          const court1Positions = [];
+          // Check court 1 first - count actual filled positions
+          let court1FilledCount = 0;
           for (let pos = 1; pos <= 4; pos++) {
             const key = `${date}-1-${pos}`;
-            if (!this.pendingReservations[date][key]) {
-              court1Positions.push({ court: 1, pos, key });
+            if (this.pendingReservations[date][key]) {
+              court1FilledCount++;
             }
           }
           
           // If court 1 has space, use it
-          if (court1Positions.length > 0) {
-            const randomIndex = Math.floor(Math.random() * court1Positions.length);
-            const selectedPosition = court1Positions[randomIndex];
-            this.pendingReservations[date][selectedPosition.key] = currentPlayer.id;
-            this.hasUnsavedChanges = true;
+          if (court1FilledCount < 4) {
+            // Find available positions in court 1
+            const availablePositions = [];
+            for (let pos = 1; pos <= 4; pos++) {
+              const key = `${date}-1-${pos}`;
+              if (!this.pendingReservations[date][key]) {
+                availablePositions.push({ court: 1, pos, key });
+              }
+            }
             
-            // Check if court 1 is now full (4 players) and select random player
-            this.checkAndSelectRandomPlayer(date, 1);
-            return;
+            if (availablePositions.length > 0) {
+              const randomIndex = Math.floor(Math.random() * availablePositions.length);
+              const selectedPosition = availablePositions[randomIndex];
+              this.pendingReservations[date][selectedPosition.key] = currentPlayer.id;
+              this.hasUnsavedChanges = true;
+              
+              // Check if court 1 is now full (4 players) and select random player
+              this.checkAndSelectRandomPlayer(date, 1);
+              return;
+            }
           }
           
           // Court 1 is full, check court 2
-          const court2Positions = [];
+          let court2FilledCount = 0;
           for (let pos = 1; pos <= 4; pos++) {
             const key = `${date}-2-${pos}`;
-            if (!this.pendingReservations[date][key]) {
-              court2Positions.push({ court: 2, pos, key });
+            if (this.pendingReservations[date][key]) {
+              court2FilledCount++;
             }
           }
           
           // If court 2 has space, use it
-          if (court2Positions.length > 0) {
-            const randomIndex = Math.floor(Math.random() * court2Positions.length);
-            const selectedPosition = court2Positions[randomIndex];
-            this.pendingReservations[date][selectedPosition.key] = currentPlayer.id;
-            this.hasUnsavedChanges = true;
+          if (court2FilledCount < 4) {
+            // Find available positions in court 2
+            const availablePositions = [];
+            for (let pos = 1; pos <= 4; pos++) {
+              const key = `${date}-2-${pos}`;
+              if (!this.pendingReservations[date][key]) {
+                availablePositions.push({ court: 2, pos, key });
+              }
+            }
             
-            // Check if court 2 is now full (4 players) and select random player
-            this.checkAndSelectRandomPlayer(date, 2);
-            return;
+            if (availablePositions.length > 0) {
+              const randomIndex = Math.floor(Math.random() * availablePositions.length);
+              const selectedPosition = availablePositions[randomIndex];
+              this.pendingReservations[date][selectedPosition.key] = currentPlayer.id;
+              this.hasUnsavedChanges = true;
+              
+              // Check if court 2 is now full (4 players) and select random player
+              this.checkAndSelectRandomPlayer(date, 2);
+              return;
+            }
           }
           
           // Both courts are full
