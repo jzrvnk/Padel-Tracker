@@ -122,6 +122,17 @@
     @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
     .toast.hiding { animation: slideOut 0.3s ease; }
+    
+    select option {
+      font-size: 14px;
+      padding: 10px;
+    }
+    
+    @media (max-width: 480px) {
+      select, select option {
+        font-size: 12px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -356,8 +367,8 @@
         <div style="margin-bottom: 15px;">
           <label style="display: block; margin-bottom: 8px; color: #2e7d32; font-weight: bold;">Gebruikersnaam</label>
           <select v-model="loginData.username" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px;">
-            <option value="">-- Kies je naam --</option>
-            <option v-for="player in sortedPlayers" :key="player.id" :value="player.username">
+            <option value="" style="font-size: 14px;">-- Kies je naam --</option>
+            <option v-for="player in sortedPlayers" :key="player.id" :value="player.username" style="font-size: 14px;">
               {{ player.name }}
             </option>
           </select>
