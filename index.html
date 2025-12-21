@@ -816,6 +816,9 @@
             }
           }
           
+          // Clear random selections for courts that are no longer full
+          this.updateRandomSelections(date);
+          
           // Reorganize: if veld 1 has empty spots and veld 2 has players, move first player from veld 2 to veld 1
           this.reorganizeReservations(date);
           
@@ -985,6 +988,9 @@
           
           delete this.pendingReservations[date][key];
           
+          // Clear random selections for courts that are no longer full
+          this.updateRandomSelections(date);
+          
           // Reorganize: if veld 1 has empty spots and veld 2 has players, move first player from veld 2 to veld 1
           this.reorganizeReservations(date);
           
@@ -1030,6 +1036,9 @@
               }
             });
           }
+          
+          // Update random selections after reorganization
+          this.updateRandomSelections(date);
         },
         
         getCurrentPlayer() {
@@ -1092,24 +1101,58 @@
         checkAndSelectRandomPlayer(date, court) {
           // Count filled positions for this court
           let filledCount = 0;
+          const filledPositions = [];
           for (let pos = 1; pos <= 4; pos++) {
             const key = `${date}-${court}-${pos}`;
             if (this.pendingReservations[date][key]) {
               filledCount++;
+              filledPositions.push(pos);
             }
           }
           
           // If court is full (4 players), select a random player to mark in red
           if (filledCount === 4) {
-            const randomPosition = Math.floor(Math.random() * 4) + 1;
             const courtKey = `${date}-${court}`;
             
             if (!this.randomSelectedPlayers[courtKey]) {
+              // Select random position from actually filled positions
+              const randomIndex = Math.floor(Math.random() * filledPositions.length);
+              const randomPosition = filledPositions[randomIndex];
               this.randomSelectedPlayers[courtKey] = randomPosition;
               
               // Show toast notification
               const playerAtPosition = this.getPlayerAtPosition(date, court, randomPosition);
               this.showToast(`🎯 ${playerAtPosition} is geselecteerd voor veld ${court}!`, 'info');
+            }
+          }
+        },
+        
+        updateRandomSelections(date) {
+          // Check both courts and clear random selections if they're no longer full
+          for (let court = 1; court <= 2; court++) {
+            let filledCount = 0;
+            for (let pos = 1; pos <= 4; pos++) {
+              const key = `${date}-${court}-${pos}`;
+              if (this.pendingReservations[date] && this.pendingReservations[date][key]) {
+                filledCount++;
+              }
+            }
+            
+            const courtKey = `${date}-${court}`;
+            if (filledCount < 4) {
+              // Court is no longer full, clear random selection
+              delete this.randomSelectedPlayers[courtKey];
+            } else if (filledCount === 4 && !this.randomSelectedPlayers[courtKey]) {
+              // Court is full but no random selection yet, create one
+              const filledPositions = [];
+              for (let pos = 1; pos <= 4; pos++) {
+                const key = `${date}-${court}-${pos}`;
+                if (this.pendingReservations[date][key]) {
+                  filledPositions.push(pos);
+                }
+              }
+              const randomIndex = Math.floor(Math.random() * filledPositions.length);
+              this.randomSelectedPlayers[courtKey] = filledPositions[randomIndex];
             }
           }
         },
