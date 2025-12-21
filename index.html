@@ -163,7 +163,6 @@
         </div>
         <div style="display: flex; gap: 10px;">
           <button v-if="hasUnsavedChanges || activeTab === 'profile'" class="nav-tab" style="background: #2e7d32; color: white;" @click="activeTab === 'profile' ? saveMyProfile() : saveReservations()">💾 Bewaren</button>
-          <button v-if="hasUnsavedChanges || activeTab === 'profile'" class="nav-tab" style="background: #757575; color: white;" @click="activeTab === 'profile' ? resetProfileForm() : cancelChanges()">❌ Annuleren</button>
         </div>
       </div>
 
@@ -575,9 +574,14 @@
             reservations: this.reservations,
             userEmailMap: this.userEmailMap,
             admins: this.admins,
-            scores: this.scores,
             lastUpdated: new Date().toISOString()
           };
+          
+          // Only include scores if it exists
+          if (this.scores) {
+            data.scores = this.scores;
+          }
+          
           await database.ref('padel-data').set(data);
         },
         
@@ -860,11 +864,7 @@
           await this.saveToFirebase();
           this.showToast('Reservaties opgeslagen!');
         },
-        
-        cancelChanges() {
-          this.pendingReservations = {};
-          this.hasUnsavedChanges = false;
-        },
+
         
         async addMyselfAsPlayer() {
           const name = prompt('Voer je volledige naam in:');
