@@ -1037,16 +1037,23 @@
               return;
             }
             
-            try {
-              await auth.currentUser.updatePassword(this.profileForm.password);
-            } catch (error) {
-              if (error.code === 'auth/requires-recent-login') {
-                this.showToast('Voor veiligheid moet je opnieuw inloggen om je wachtwoord te wijzigen.', 'error');
-                return;
-              } else {
-                this.showToast('Fout bij wijzigen wachtwoord: ' + error.message, 'error');
-                return;
+            // Check if user is logged in via Firebase Auth (admin) or database (player)
+            if (auth.currentUser) {
+              // Firebase Auth user (admin)
+              try {
+                await auth.currentUser.updatePassword(this.profileForm.password);
+              } catch (error) {
+                if (error.code === 'auth/requires-recent-login') {
+                  this.showToast('Voor veiligheid moet je opnieuw inloggen om je wachtwoord te wijzigen.', 'error');
+                  return;
+                } else {
+                  this.showToast('Fout bij wijzigen wachtwoord: ' + error.message, 'error');
+                  return;
+                }
               }
+            } else {
+              // Database user (player) - update password in player object
+              player.password = this.profileForm.password;
             }
           }
           
