@@ -617,8 +617,7 @@
           toasts: [],
           showPassword: false,
           randomSelectedPlayers: {}, // Stores random selected players per date/court
-          selectedPlayer: null,
-          showClassicLogin: false,
+          logs: [],
         }
       },
       
@@ -726,7 +725,7 @@
               if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
               if (data.admins) this.admins = data.admins;
               if (data.scores) this.scores = data.scores;
-              if (data.randomSelectedPlayers) this.randomSelectedPlayers = data.randomSelectedPlayers;
+              if (data.logs) this.logs = data.logs;
             } else {
               console.log('No data in Firebase!');
             }
@@ -767,20 +766,15 @@
               timestamp: new Date().toISOString()
             };
             
-            // Get existing logs or create empty array
-            const logsRef = database.ref('activity-logs');
-            const snapshot = await logsRef.once('value');
-            const logs = snapshot.val() || [];
+            // Add to logs array in main data
+            if (!this.logs) this.logs = [];
+            this.logs.push(logEntry);
             
-            // Add new log entry
-            logs.push(logEntry);
-            
-            // Keep only last 100 entries
-            if (logs.length > 100) {
-              logs.splice(0, logs.length - 100);
+            // Keep only last 50 entries
+            if (this.logs.length > 50) {
+              this.logs = this.logs.slice(-50);
             }
             
-            await logsRef.set(logs);
             console.log(`📝 ${action} by ${this.currentUser}:`, details);
           } catch (error) {
             console.error('Logging failed:', error);
@@ -794,6 +788,7 @@
             userEmailMap: this.userEmailMap,
             admins: this.admins,
             randomSelectedPlayers: this.randomSelectedPlayers,
+            logs: this.logs,
             lastUpdated: new Date().toISOString()
           };
           
