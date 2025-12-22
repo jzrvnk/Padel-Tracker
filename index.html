@@ -785,6 +785,9 @@
         },
         
         async saveToFirebase() {
+          // Ensure logs are preserved
+          if (!this.logs) this.logs = [];
+          
           const data = {
             players: this.players,
             reservations: this.reservations,

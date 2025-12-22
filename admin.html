@@ -353,6 +353,13 @@
             style="padding: 10px 20px;">
             🏆 Uitslagen
           </button>
+          <button 
+            class="btn" 
+            :class="adminSubTab === 'logs' ? 'btn-primary' : 'btn-secondary'"
+            @click="adminSubTab = 'logs'"
+            style="padding: 10px 20px;">
+            📋 Logs
+          </button>
         </div>
         
         <!-- Spelers Tab -->
@@ -466,6 +473,33 @@
             </div>
           </div>
         </div>
+        
+        <!-- Logs Tab -->
+        <div v-if="adminSubTab === 'logs'" class="admin-form">
+          <h3 style="color: #2e7d32; margin-bottom: 15px;">📋 Activity Logs</h3>
+          
+          <div v-if="logs.length === 0" style="text-align: center; padding: 40px; color: #666;">
+            <p>Nog geen activiteiten gelogd.</p>
+          </div>
+          
+          <div v-else style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <div v-for="(log, index) in reversedLogs" :key="index" 
+                 style="padding: 15px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="flex: 1;">
+                <div style="font-weight: bold; color: #2e7d32; margin-bottom: 5px;">
+                  👤 {{ log.user }} - {{ log.action }}
+                </div>
+                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                  🕰️ {{ formatTimestamp(log.timestamp) }}
+                </div>
+                <div v-if="log.details && Object.keys(log.details).length > 0" 
+                     style="background: #f8f9fa; padding: 8px; border-radius: 5px; font-size: 13px;">
+                  <pre style="margin: 0; white-space: pre-wrap; font-family: inherit;">{{ formatLogDetails(log.details) }}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -525,13 +559,26 @@
           scores: {},
           editingScore: null,
           scoreForm: { team1Sets: '', team2Sets: '' },
-          adminSubTab: 'players'
+          adminSubTab: 'players',
+          logs: []
+        },
+        
+        formatTimestamp(timestamp) {
+          return new Date(timestamp).toLocaleString('nl-NL');
+        },
+        
+        formatLogDetails(details) {
+          return JSON.stringify(details, null, 2);
         }
       },
       
       computed: {
         currentPlayerProfile() {
           return this.players.find(p => p.username === this.currentUser);
+        },
+        
+        reversedLogs() {
+          return [...this.logs].reverse();
         }
       },
       
@@ -628,6 +675,7 @@
                 if (data.reservations) this.reservations = data.reservations;
                 if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
                 if (data.scores) this.scores = data.scores;
+                if (data.logs) this.logs = data.logs;
                 if (data.admins && data.admins.length > 0) {
                   this.admins = data.admins;
                   // Ensure jzrvnk and frans are always admin
