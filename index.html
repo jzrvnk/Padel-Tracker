@@ -537,6 +537,7 @@
               if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
               if (data.admins) this.admins = data.admins;
               if (data.scores) this.scores = data.scores;
+              if (data.randomSelectedPlayers) this.randomSelectedPlayers = data.randomSelectedPlayers;
             } else {
               console.log('No data in Firebase!');
             }
@@ -574,6 +575,7 @@
             reservations: this.reservations,
             userEmailMap: this.userEmailMap,
             admins: this.admins,
+            randomSelectedPlayers: this.randomSelectedPlayers,
             lastUpdated: new Date().toISOString()
           };
           
