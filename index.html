@@ -617,6 +617,8 @@
           toasts: [],
           showPassword: false,
           randomSelectedPlayers: {}, // Stores random selected players per date/court
+          selectedPlayer: null,
+          showClassicLogin: false,
           logs: [],
         }
       },
@@ -725,6 +727,7 @@
               if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
               if (data.admins) this.admins = data.admins;
               if (data.scores) this.scores = data.scores;
+              if (data.randomSelectedPlayers) this.randomSelectedPlayers = data.randomSelectedPlayers;
               if (data.logs) this.logs = data.logs;
             } else {
               console.log('No data in Firebase!');
