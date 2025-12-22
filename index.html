@@ -327,7 +327,7 @@
         <div style="padding: 20px;">
           <div v-if="leaderboard.length === 0" style="text-align: center; padding: 40px; color: #666;">
             <h3>Nog geen statistieken</h3>
-            <p>Speel matchen en voer scores in via het admin panel!</p>
+            <p>Geef je score door aan frans.vanstraeten@telenet.be of via WhatsApp.</p>
           </div>
           <div v-else style="max-width: 800px; margin: 0 auto;">
             <div v-for="(player, index) in leaderboard" :key="player.id" 
@@ -758,6 +758,31 @@
           return cleaned;
         },
 
+        async logActivity(action, details) {
+          const logEntry = {
+            user: this.currentUser,
+            action: action,
+            details: details,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Get existing logs or create empty array
+          const logsRef = database.ref('activity-logs');
+          const snapshot = await logsRef.once('value');
+          const logs = snapshot.val() || [];
+          
+          // Add new log entry
+          logs.push(logEntry);
+          
+          // Keep only last 100 entries
+          if (logs.length > 100) {
+            logs.splice(0, logs.length - 100);
+          }
+          
+          await logsRef.set(logs);
+          console.log(`📝 ${action} by ${this.currentUser}:`, details);
+        },
+        
         async saveToFirebase() {
           const data = {
             players: this.players,
@@ -773,6 +798,7 @@
             data.scores = this.scores;
           }
           
+          console.log(`💾 ${this.currentUser} saved data at ${new Date().toLocaleString()}`);
           await database.ref('padel-data').set(data);
         },
         
@@ -1049,6 +1075,7 @@
         },
         
         async saveReservations() {
+          await this.logActivity('Reservaties opgeslagen', { changes: this.pendingReservations });
           this.reservations = { ...this.reservations, ...this.pendingReservations };
           this.pendingReservations = {};
           this.hasUnsavedChanges = false;
@@ -1279,6 +1306,14 @@
         async saveMyProfile() {
           const player = this.getCurrentPlayer();
           if (!player) return;
+          
+          const changes = {};
+          if (player.name !== this.profileForm.name) changes.name = { old: player.name, new: this.profileForm.name };
+          if (player.email !== this.profileForm.email) changes.email = { old: player.email, new: this.profileForm.email };
+          if (player.phone !== this.profileForm.phone) changes.phone = { old: player.phone, new: this.profileForm.phone };
+          if (this.profileForm.password) changes.password = 'updated';
+          
+          await this.logActivity('Profiel bijgewerkt', changes);
           
           // Update name, email and phone
           player.name = this.profileForm.name;
