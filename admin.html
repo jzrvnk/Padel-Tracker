@@ -108,7 +108,7 @@
 <body>
   <div id="app">
     <!-- Score Modal -->
-    <div v-if="editingScore" class="modal-overlay" @click.self="cancelScoreEdit">
+    <div v-if="editingScore !== null" class="modal-overlay" @click.self="cancelScoreEdit">
       <div class="modal-content">
         <div class="modal-header">🏆 Score Invoeren</div>
         <div style="margin-bottom: 20px; background: #f5f5f5; padding: 15px; border-radius: 8px;">
