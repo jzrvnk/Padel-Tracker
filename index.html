@@ -159,6 +159,7 @@
         <div style="display: flex; gap: 10px;">
           <button class="nav-tab" :class="{ active: activeTab === 'schedule' }" @click="activeTab = 'schedule'">📅 Reservaties</button>
           <button class="nav-tab" :class="{ active: activeTab === 'stats' }" @click="activeTab = 'stats'">🏆 Statistieken</button>
+          <button class="nav-tab" :class="{ active: activeTab === 'players' }" @click="activeTab = 'players'">👥 Spelers</button>
           <button v-if="admins.includes(currentUser)" class="nav-tab" :class="{ active: activeTab === 'admin' }" @click="activeTab = 'admin'">⚙️ Beheer</button>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -248,6 +249,41 @@
               <div style="text-align: right;">
                 <div style="font-size: 28px; font-weight: bold; color: #2e7d32;">{{ player.winRate }}%</div>
                 <div style="font-size: 12px; color: #666;">{{ player.stats.matchesPlayed }} matchen</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="activeTab === 'players'" class="courts-container">
+        <div class="date-header">👥 Spelerslijst</div>
+        <div style="padding: 20px;">
+          <div v-if="players.length === 0" style="text-align: center; padding: 40px; color: #666;">
+            <h3>Nog geen spelers</h3>
+            <p>Er zijn nog geen spelers toegevoegd aan de club.</p>
+          </div>
+          <div v-else style="max-width: 800px; margin: 0 auto;">
+            <div style="margin-bottom: 20px; color: #666; text-align: center;">
+              <p>{{ players.length }} speler{{ players.length !== 1 ? 's' : '' }} in de club</p>
+            </div>
+            <div v-for="player in sortedPlayers" :key="player.id" 
+                 style="background: #f5f5f5; padding: 20px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="flex: 1;">
+                <div style="font-size: 18px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">{{ player.name }}</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">
+                  📧 {{ player.email || 'Geen email' }} • 📱 {{ player.phone || 'Geen telefoon' }}
+                </div>
+                <div style="font-size: 12px; color: #999;">
+                  👤 {{ player.username }}
+                  <span v-if="admins.includes(player.username)" style="background: #2e7d32; color: white; padding: 2px 8px; border-radius: 5px; margin-left: 10px;">ADMIN</span>
+                </div>
+              </div>
+              <div v-if="player.stats && player.stats.matchesPlayed > 0" style="text-align: right; margin-left: 20px;">
+                <div style="font-size: 16px; font-weight: bold; color: #2e7d32;">{{ (player.stats.matchesWon / player.stats.matchesPlayed * 100).toFixed(0) }}%</div>
+                <div style="font-size: 12px; color: #666;">{{ player.stats.matchesPlayed }} matchen</div>
+              </div>
+              <div v-else style="text-align: right; margin-left: 20px; color: #999; font-size: 12px;">
+                Nog geen<br>statistieken
               </div>
             </div>
           </div>
