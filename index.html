@@ -759,28 +759,32 @@
         },
 
         async logActivity(action, details) {
-          const logEntry = {
-            user: this.currentUser,
-            action: action,
-            details: details,
-            timestamp: new Date().toISOString()
-          };
-          
-          // Get existing logs or create empty array
-          const logsRef = database.ref('activity-logs');
-          const snapshot = await logsRef.once('value');
-          const logs = snapshot.val() || [];
-          
-          // Add new log entry
-          logs.push(logEntry);
-          
-          // Keep only last 100 entries
-          if (logs.length > 100) {
-            logs.splice(0, logs.length - 100);
+          try {
+            const logEntry = {
+              user: this.currentUser,
+              action: action,
+              details: details,
+              timestamp: new Date().toISOString()
+            };
+            
+            // Get existing logs or create empty array
+            const logsRef = database.ref('activity-logs');
+            const snapshot = await logsRef.once('value');
+            const logs = snapshot.val() || [];
+            
+            // Add new log entry
+            logs.push(logEntry);
+            
+            // Keep only last 100 entries
+            if (logs.length > 100) {
+              logs.splice(0, logs.length - 100);
+            }
+            
+            await logsRef.set(logs);
+            console.log(`📝 ${action} by ${this.currentUser}:`, details);
+          } catch (error) {
+            console.error('Logging failed:', error);
           }
-          
-          await logsRef.set(logs);
-          console.log(`📝 ${action} by ${this.currentUser}:`, details);
         },
         
         async saveToFirebase() {
@@ -1075,7 +1079,12 @@
         },
         
         async saveReservations() {
-          await this.logActivity('Reservaties opgeslagen', { changes: this.pendingReservations });
+          try {
+            await this.logActivity('Reservaties opgeslagen', { changes: this.pendingReservations });
+          } catch (error) {
+            console.error('Logging failed, continuing with save:', error);
+          }
+          
           this.reservations = { ...this.reservations, ...this.pendingReservations };
           this.pendingReservations = {};
           this.hasUnsavedChanges = false;
@@ -1313,7 +1322,11 @@
           if (player.phone !== this.profileForm.phone) changes.phone = { old: player.phone, new: this.profileForm.phone };
           if (this.profileForm.password) changes.password = 'updated';
           
-          await this.logActivity('Profiel bijgewerkt', changes);
+          try {
+            await this.logActivity('Profiel bijgewerkt', changes);
+          } catch (error) {
+            console.error('Logging failed, continuing with save:', error);
+          }
           
           // Update name, email and phone
           player.name = this.profileForm.name;
