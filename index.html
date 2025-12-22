@@ -156,49 +156,63 @@
       }
     }
     
-    /* Floating Names Login */
-    .floating-login { 
-      position: relative; 
-      min-height: 300px; 
-      overflow: hidden; 
-      border: 2px dashed rgba(46, 125, 50, 0.3); 
-      border-radius: 15px;
-      background: linear-gradient(45deg, rgba(46, 125, 50, 0.05), rgba(76, 175, 80, 0.05), rgba(139, 195, 74, 0.05));
-      background-size: 400% 400%;
-      animation: gradientShift 8s ease infinite;
+    /* Player List Login */
+    .player-list-login {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      background: #f9f9f9;
     }
-    .floating-name { 
-      position: absolute; 
-      padding: 12px 24px; 
-      background: linear-gradient(135deg, #2e7d32, #4caf50, #66bb6a); 
-      color: white; 
-      border-radius: 30px; 
-      cursor: pointer; 
+    .player-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .player-item:hover {
+      background: #e8f5e9;
+    }
+    .player-item:last-child {
+      border-bottom: none;
+    }
+    .player-avatar {
+      width: 40px;
+      height: 40px;
+      background: #2e7d32;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
       font-weight: bold;
-      transition: all 0.4s ease;
-      animation: floatAround 12s infinite linear;
-      user-select: none;
-      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      font-size: 16px;
     }
-    .floating-name:hover { 
-      background: linear-gradient(135deg, #1b5e20, #2e7d32, #388e3c); 
-      transform: scale(1.15); 
-      z-index: 10;
-      animation-play-state: paused;
-      box-shadow: 0 8px 25px rgba(46, 125, 50, 0.5);
-    }
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    @keyframes floatAround {
-      0% { transform: translate(0px, 0px) rotate(0deg); }
-      25% { transform: translate(-40px, 30px) rotate(90deg); }
-      50% { transform: translate(40px, -20px) rotate(180deg); }
-      75% { transform: translate(-20px, -40px) rotate(270deg); }
-      100% { transform: translate(0px, 0px) rotate(360deg); }
+    .header-avatar {
+      width: 30px;
+      height: 30px;
+      background: #2e7d32;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+    .header-avatar {
+      width: 30px;
+      height: 30px;
+      background: #2e7d32;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
     }
     
     .password-modal {
@@ -233,9 +247,9 @@
     <div v-if="isLoggedIn" class="app-container">
       <div class="header">
         <h1 style="font-size: 20px;">🎾 Padel Tracker</h1>
-        <div>
-          <span style="font-weight: bold; cursor: pointer;" @click="activeTab = 'profile'">Dag {{ currentUserFirstName }}</span>
-          <button @click="logout" style="background: none; border: none; color: #f44336; font-size: 20px; margin-left: 10px; cursor: pointer; padding: 5px;">❌</button>
+        <div style="display: flex; align-items: center;">
+          <div class="header-avatar" @click="activeTab = 'profile'" style="cursor: pointer;">{{ getInitials(currentUserDisplayName) }}</div>
+          <button @click="logout" class="logout-btn" style="background: none; border: none; color: #f44336; font-size: 20px; margin-left: 10px; cursor: pointer; padding: 5px;">❌</button>
         </div>
       </div>
 
@@ -375,7 +389,7 @@
       </div>
 
       <div v-if="activeTab === 'profile'" class="courts-container">
-        <div class="date-header">👤 Mijn Profiel</div>
+        <div class="date-header">👤 {{ currentUserDisplayName }}</div>
         <div style="padding: 20px; max-width: 600px; margin: 0 auto;">
           <div v-if="getCurrentPlayer()">
             <!-- Statistieken Card -->
@@ -492,12 +506,11 @@
       <!-- Password Modal -->
       <div v-if="selectedPlayer" class="password-modal" @click.self="cancelLogin">
         <div class="password-modal-content">
-          <h2 style="color: #2e7d32; margin-bottom: 20px;">🎾 Welkom {{ selectedPlayer.name }}!</h2>
-          <p style="margin-bottom: 20px; color: #666;">Voer je wachtwoord in om door te gaan</p>
+          <h2 style="color: white; margin-bottom: 20px; font-weight: bold;">🎾 Welkom {{ selectedPlayer.name }}!</h2>
           <div style="position: relative; margin-bottom: 20px;">
             <input 
               v-model="loginData.password" 
-              placeholder="Wachtwoord" 
+              placeholder="Voer je wachtwoord in" 
               :type="showPassword ? 'text' : 'password'" 
               style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; padding-right: 50px; font-size: 16px;" 
               @keyup.enter="login"
@@ -512,25 +525,27 @@
         </div>
       </div>
       
-      <!-- Floating Names Login -->
+      <!-- Player List Login -->
       <div v-else style="background: white; padding: 40px; border-radius: 20px; width: 90%; max-width: 500px;">
         <h1 style="text-align: center; color: #2e7d32; margin-bottom: 30px;">🎾 Padel Tracker</h1>
-        <p style="text-align: center; color: #666; margin-bottom: 30px;">Klik op je naam om in te loggen</p>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">Selecteer je naam om in te loggen</p>
         
-        <div class="floating-login">
+        <div v-if="players.length > 0" class="player-list-login">
           <div 
-            v-for="(player, index) in players" 
+            v-for="player in sortedPlayers" 
             :key="player.id"
-            class="floating-name"
-            :style="{
-              left: Math.random() * 300 + 20 + 'px',
-              top: Math.random() * 200 + 20 + 'px',
-              transform: 'rotate(' + Math.random() * 360 + 'deg)',
-              animationDuration: (10 + Math.random() * 6) + 's'
-            }"
+            class="player-item"
             @click="selectPlayer(player)">
-            {{ player.name }}
+            <div class="player-avatar">{{ getInitials(player.name) }}</div>
+            <div>
+              <div style="font-weight: bold; color: #2e7d32;">{{ player.name }}</div>
+              <div style="font-size: 12px; color: #666;">{{ player.username }}</div>
+            </div>
           </div>
+        </div>
+        
+        <div v-else style="text-align: center; padding: 40px; color: #666;">
+          <p>Nog geen spelers beschikbaar.</p>
         </div>
         
         <div style="text-align: center; margin-top: 30px;">
@@ -556,7 +571,7 @@
           <button @click="showPassword = !showPassword" type="button" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; cursor: pointer;">{{ showPassword ? '🙈' : '👁️' }}</button>
         </div>
         <button class="btn btn-primary" @click="login" style="width: 100%; margin-bottom: 10px;">Inloggen</button>
-        <button class="btn btn-secondary" @click="showClassicLogin = false" style="width: 100%;">Terug naar Floating Login</button>
+        <button class="btn btn-secondary" @click="showClassicLogin = false" style="width: 100%;">Terug naar Login</button>
         <div v-if="loginError" style="color: red; text-align: center; margin-top: 10px;">{{ loginError }}</div>
       </div>
     </div>
@@ -1383,6 +1398,10 @@
           this.selectedPlayer = null;
           this.loginData = { username: '', password: '' };
           this.loginError = '';
+        },
+        
+        getInitials(name) {
+          return name.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
         }
       }
     }).mount('#app');
