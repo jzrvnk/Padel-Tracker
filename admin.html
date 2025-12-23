@@ -157,7 +157,7 @@
     </div>
 
     <!-- Login Scherm -->
-    <div v-if="!isLoggedIn && !loading" class="login-container">
+    <div v-if="(!isLoggedIn && !loading) || showLoginAlways" class="login-container">
       <div class="login-card">
         <h1>🎾 Padel Admin page</h1>
         <div class="input-group">
@@ -482,19 +482,44 @@
             <p>Nog geen activiteiten gelogd.</p>
           </div>
           
-          <div v-else style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px;">
-            <div v-for="(log, index) in reversedLogs" :key="index" 
-                 style="padding: 15px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: flex-start;">
-              <div style="flex: 1;">
-                <div style="font-weight: bold; color: #2e7d32; margin-bottom: 5px;">
-                  👤 {{ log.user }} - {{ log.action }}
+          <div v-else style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px;">
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+                <select v-model="logFilterUser" style="padding:8px; border-radius:6px;">
+                  <option value="">Alle gebruikers</option>
+                  <option v-for="u in availableLogUsers" :key="u" :value="u">{{ u }}</option>
+                </select>
+                <input v-model="logFilterText" placeholder="Zoek (actie, details of gebruiker)" style="flex:1; padding:8px; border-radius:6px;" />
+                <button class="btn btn-secondary" @click="clearLogFilters()" style="padding:8px 12px;">Clear</button>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                <div style="font-size:13px; color:#666;">
+                  Weergegeven {{ ((logCurrentPage-1)*logPageSize)+1 }}–{{ Math.min(paginatedLogs.total, logCurrentPage*logPageSize) }} van {{ paginatedLogs.total }}
                 </div>
-                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
-                  🕰️ {{ formatTimestamp(log.timestamp) }}
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <button class="btn btn-secondary" :disabled="logCurrentPage<=1" @click="prevLogPage()">« Vorige</button>
+                  <span style="color:#333; margin:0 8px;">Pagina {{ logCurrentPage }} / {{ totalLogPages }}</span>
+                  <button class="btn btn-secondary" :disabled="logCurrentPage>=totalLogPages" @click="nextLogPage()">Volgende »</button>
                 </div>
-                <div v-if="log.details && Object.keys(log.details).length > 0" 
-                     style="background: #f8f9fa; padding: 8px; border-radius: 5px; font-size: 13px;">
-                  <pre style="margin: 0; white-space: pre-wrap; font-family: inherit;">{{ formatLogDetails(log.details) }}</pre>
+              </div>
+
+              <div v-for="group in groupedLogs" :key="group.date" style="margin-bottom: 10px; border-bottom: 1px solid #eee;">
+              <button class="btn" @click.prevent="toggleDate(group.date)" style="width: 100%; text-align: left; padding: 12px; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border-radius: 6px;">
+                <span>{{ new Date(group.date).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }} — {{ group.entries.length }} items</span>
+                <span>{{ expandedDates[group.date] ? '▾' : '▸' }}</span>
+              </button>
+
+              <div v-if="expandedDates[group.date]" style="padding: 10px 12px;">
+                <div v-for="(log, idx) in group.entries" :key="log.timestamp + '-' + idx" style="padding: 10px; border-radius: 6px; margin-bottom: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                  <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
+                    <div style="font-weight: bold; color: #2e7d32;">{{ log.user || 'Unknown' }}</div>
+                    <div style="font-size: 12px; color: #666;">{{ new Date(log.timestamp).toLocaleTimeString('nl-NL') }}</div>
+                  </div>
+                  <div style="margin-top:6px; color:#333;">{{ log.action }}</div>
+                  <details v-if="log.details && Object.keys(log.details).length > 0" style="margin-top:8px;">
+                    <summary style="cursor: pointer; color:#2e7d32;">Details</summary>
+                    <pre style="margin:8px 0 0 0; white-space: pre-wrap; font-family: inherit; background:#f5f7f8; padding:8px; border-radius:4px;">{{ formatLogDetails(log.details) }}</pre>
+                  </details>
                 </div>
               </div>
             </div>
@@ -554,31 +579,82 @@
           fridays: [],
           toasts: [],
           notificationsEnabled: false,
+          showLoginAlways: true,
           permissionGranted: false,
           
           scores: {},
           editingScore: null,
           scoreForm: { team1Sets: '', team2Sets: '' },
           adminSubTab: 'players',
-          logs: []
-        },
-        
-        formatTimestamp(timestamp) {
-          return new Date(timestamp).toLocaleString('nl-NL');
-        },
-        
-        formatLogDetails(details) {
-          return JSON.stringify(details, null, 2);
-        }
+          logs: [],
+          expandedDates: {}
+          ,
+          logFilterText: '',
+          logFilterUser: '',
+          logPageSize: 50,
+          logCurrentPage: 1
+        };
       },
       
       computed: {
         currentPlayerProfile() {
           return this.players.find(p => p.username === this.currentUser);
         },
-        
+
         reversedLogs() {
           return [...this.logs].reverse();
+        },
+
+        filteredLogs() {
+          const text = (this.logFilterText || '').toLowerCase().trim();
+          const user = (this.logFilterUser || '').trim();
+          return (this.logs || []).filter(log => {
+            if (user && log.user !== user) return false;
+            if (!text) return true;
+            const action = (log.action || '').toLowerCase();
+            const details = log.details ? JSON.stringify(log.details).toLowerCase() : '';
+            const userStr = (log.user || '').toLowerCase();
+            return action.includes(text) || details.includes(text) || userStr.includes(text);
+          });
+        },
+        paginatedLogs() {
+          const pageSize = Number(this.logPageSize) || 50;
+          const page = Math.max(1, Number(this.logCurrentPage) || 1);
+          const rev = [...(this.filteredLogs || [])].reverse(); // newest first
+          const total = rev.length;
+          const start = (page - 1) * pageSize;
+          const end = start + pageSize;
+          return { items: rev.slice(start, end), total };
+        },
+
+        totalLogPages() {
+          const size = Number(this.logPageSize) || 50;
+          return Math.max(1, Math.ceil((this.paginatedLogs.total || 0) / size));
+        },
+
+        groupedLogs() {
+          const groups = {};
+          (this.paginatedLogs.items || []).forEach(log => {
+            const date = new Date(log.timestamp).toISOString().split('T')[0];
+            groups[date] = groups[date] || [];
+            groups[date].push(log);
+          });
+          // sort entries in each date: newest first, then by user
+          Object.keys(groups).forEach(d => {
+            groups[d].sort((a,b) => {
+              const diff = new Date(b.timestamp) - new Date(a.timestamp);
+              if (diff !== 0) return diff;
+              return (a.user || '').localeCompare(b.user || '');
+            });
+          });
+          return Object.keys(groups)
+            .sort((a,b) => b.localeCompare(a))
+            .map(d => ({ date: d, entries: groups[d] }));
+        },
+        availableLogUsers() {
+          const users = new Set();
+          (this.logs || []).forEach(l => { if (l.user) users.add(l.user); });
+          return Array.from(users).sort();
         }
       },
       
@@ -629,9 +705,41 @@
           },
           immediate: true
         }
+        ,
+        filteredLogs: {
+          handler() {
+            this.logCurrentPage = 1;
+          }
+        }
       },
       
       methods: {
+        prevLogPage() {
+          if (this.logCurrentPage > 1) this.logCurrentPage--;
+        },
+        nextLogPage() {
+          if (this.logCurrentPage < this.totalLogPages) this.logCurrentPage++;
+        },
+        gotoLogPage(n) {
+          const page = Number(n) || 1;
+          this.logCurrentPage = Math.min(Math.max(1, page), this.totalLogPages);
+        },
+        toggleDate(date) {
+          if (!this.expandedDates) this.expandedDates = {};
+          this.$set ? this.$set(this.expandedDates, date, !this.expandedDates[date]) : (this.expandedDates[date] = !this.expandedDates[date]);
+        },
+        clearLogFilters() {
+          this.logFilterText = '';
+          this.logFilterUser = '';
+          this.logCurrentPage = 1;
+        },
+        formatTimestamp(timestamp) {
+          return new Date(timestamp).toLocaleString('nl-NL');
+        },
+
+        formatLogDetails(details) {
+          return JSON.stringify(details, null, 2);
+        },
         showToast(message, type = 'success') {
           const id = Date.now();
           const icons = { success: '✅', error: '❌', info: 'ℹ️' };
@@ -817,6 +925,7 @@
               this.isLoggedIn = true;
               this.currentUser = username;
               this.loginError = '';
+              this.showLoginAlways = false;
               console.log('✅ Database login successful');
               return;
             } else {
@@ -855,6 +964,7 @@
               throw new Error('auth/invalid-login-credentials');
             }
             
+            this.showLoginAlways = false;
             this.userEmailMap[username] = email;
             await this.saveToFirebase();
             this.loginError = '';
