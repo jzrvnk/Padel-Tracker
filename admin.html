@@ -451,42 +451,53 @@
             <h3 style="color: #2e7d32; margin: 0;">🏆 Match Uitslagen</h3>
             <button class="btn btn-danger" @click="resetAllStats" style="padding: 10px 20px;">🗑️ Reset Alle Statistieken</button>
           </div>
-          <div v-for="friday in fridays" :key="'score-'+friday.date" style="margin-bottom: 20px; background: #f5f5f5; padding: 20px; border-radius: 8px;">
-            <h4 style="color: #2e7d32; margin-bottom: 15px;">{{ friday.formatted }}</h4>
+          
+          <div v-if="allDatesWithReservations.length === 0" style="text-align: center; padding: 40px; color: #666;">
+            <p>Nog geen reserveringen of uitslagen gevonden.</p>
+          </div>
+          
+          <div v-for="dateObj in allDatesWithReservations" :key="'score-'+dateObj.date" style="margin-bottom: 20px; background: #f5f5f5; padding: 20px; border-radius: 8px;">
+            <h4 style="color: #2e7d32; margin-bottom: 15px;">{{ dateObj.formatted }}</h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
               <div>
                 <strong>Terrein 1:</strong>
-                <div v-if="getPlayersForCourt(friday.date, 1).length === 4" style="margin-top: 10px;">
+                <div v-if="getPlayersForCourt(dateObj.date, 1).length === 4" style="margin-top: 10px;">
                   <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
-                    {{ getPlayersForCourt(friday.date, 1)[0]?.name }} + {{ getPlayersForCourt(friday.date, 1)[1]?.name }}<br>
+                    {{ getPlayersForCourt(dateObj.date, 1)[0]?.name }} + {{ getPlayersForCourt(dateObj.date, 1)[1]?.name }}<br>
                     vs<br>
-                    {{ getPlayersForCourt(friday.date, 1)[2]?.name }} + {{ getPlayersForCourt(friday.date, 1)[3]?.name }}
+                    {{ getPlayersForCourt(dateObj.date, 1)[2]?.name }} + {{ getPlayersForCourt(dateObj.date, 1)[3]?.name }}
                   </div>
-                  <div v-if="getScore(friday.date, 1)" style="background: #e8f5e9; padding: 8px; border-radius: 5px; margin-bottom: 8px; font-size: 14px;">
-                    <strong>{{ getScore(friday.date, 1).team1Sets }}</strong> - <strong>{{ getScore(friday.date, 1).team2Sets }}</strong> sets
+                  <div v-if="getScore(dateObj.date, 1)" style="background: #e8f5e9; padding: 8px; border-radius: 5px; margin-bottom: 8px; font-size: 14px;">
+                    <strong>{{ getScore(dateObj.date, 1).team1Sets }}</strong> - <strong>{{ getScore(dateObj.date, 1).team2Sets }}</strong> sets
                   </div>
-                  <button class="btn btn-primary" @click="openScoreDialog(friday.date, 1)" style="padding: 6px 12px; font-size: 13px;">
-                    {{ getScore(friday.date, 1) ? '✏️ Wijzig' : '➕ Score' }}
+                  <button class="btn btn-primary" @click="openScoreDialog(dateObj.date, 1)" style="padding: 6px 12px; font-size: 13px;">
+                    {{ getScore(dateObj.date, 1) ? '✏️ Wijzig' : '➕ Score' }}
                   </button>
                 </div>
-                <div v-else style="color: #999; font-size: 13px; margin-top: 10px;">Nog geen 4 spelers</div>
+                <div v-else-if="getPlayersForCourt(dateObj.date, 1).length > 0" style="color: #999; font-size: 13px; margin-top: 10px;">
+                  {{ getPlayersForCourt(dateObj.date, 1).length }} speler(s) - niet volledig
+                </div>
+                <div v-else style="color: #999; font-size: 13px; margin-top: 10px;">Geen spelers</div>
               </div>
               <div>
                 <strong>Terrein 2:</strong>
-                <div v-if="getPlayersForCourt(friday.date, 2).length === 4" style="margin-top: 10px;">
+                <div v-if="getPlayersForCourt(dateObj.date, 2).length === 4" style="margin-top: 10px;">
                   <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
-                    {{ getPlayersForCourt(friday.date, 2)[0]?.name }} + {{ getPlayersForCourt(friday.date, 2)[1]?.name }}<br>
+                    {{ getPlayersForCourt(dateObj.date, 2)[0]?.name }} + {{ getPlayersForCourt(dateObj.date, 2)[1]?.name }}<br>
                     vs<br>
-                    {{ getPlayersForCourt(friday.date, 2)[2]?.name }} + {{ getPlayersForCourt(friday.date, 2)[3]?.name }}
+                    {{ getPlayersForCourt(dateObj.date, 2)[2]?.name }} + {{ getPlayersForCourt(dateObj.date, 2)[3]?.name }}
                   </div>
-                  <div v-if="getScore(friday.date, 2)" style="background: #e8f5e9; padding: 8px; border-radius: 5px; margin-bottom: 8px; font-size: 14px;">
-                    <strong>{{ getScore(friday.date, 2).team1Sets }}</strong> - <strong>{{ getScore(friday.date, 2).team2Sets }}</strong> sets
+                  <div v-if="getScore(dateObj.date, 2)" style="background: #e8f5e9; padding: 8px; border-radius: 5px; margin-bottom: 8px; font-size: 14px;">
+                    <strong>{{ getScore(dateObj.date, 2).team1Sets }}</strong> - <strong>{{ getScore(dateObj.date, 2).team2Sets }}</strong> sets
                   </div>
-                  <button class="btn btn-primary" @click="openScoreDialog(friday.date, 2)" style="padding: 6px 12px; font-size: 13px;">
-                    {{ getScore(friday.date, 2) ? '✏️ Wijzig' : '➕ Score' }}
+                  <button class="btn btn-primary" @click="openScoreDialog(dateObj.date, 2)" style="padding: 6px 12px; font-size: 13px;">
+                    {{ getScore(dateObj.date, 2) ? '✏️ Wijzig' : '➕ Score' }}
                   </button>
                 </div>
-                <div v-else style="color: #999; font-size: 13px; margin-top: 10px;">Nog geen 4 spelers</div>
+                <div v-else-if="getPlayersForCourt(dateObj.date, 2).length > 0" style="color: #999; font-size: 13px; margin-top: 10px;">
+                  {{ getPlayersForCourt(dateObj.date, 2).length }} speler(s) - niet volledig
+                </div>
+                <div v-else style="color: #999; font-size: 13px; margin-top: 10px;">Geen spelers</div>
               </div>
             </div>
           </div>
@@ -621,6 +632,34 @@
 
         reversedLogs() {
           return [...this.logs].reverse();
+        },
+
+        allDatesWithReservations() {
+          const dates = new Set();
+          
+          // Add all dates from reservations
+          Object.keys(this.reservations || {}).forEach(date => {
+            if (Object.keys(this.reservations[date] || {}).length > 0) {
+              dates.add(date);
+            }
+          });
+          
+          // Add all dates from scores
+          Object.values(this.scores || {}).forEach(score => {
+            if (score.date) dates.add(score.date);
+          });
+          
+          // Convert to array and sort (newest first)
+          return Array.from(dates)
+            .sort((a, b) => new Date(b) - new Date(a))
+            .map(date => ({
+              date,
+              formatted: new Date(date).toLocaleDateString('nl-NL', { 
+                day: 'numeric', 
+                month: 'short',
+                year: 'numeric'
+              })
+            }));
         },
 
         filteredLogs() {
@@ -793,8 +832,34 @@
         
         async initializeFirebase() {
           try {
-            // Listen for real-time updates
-            database.ref('padel-data').on('value', async (snapshot) => {
+            // Set timeout for Firebase connection
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Firebase timeout')), 10000);
+            });
+            
+            const dataPromise = new Promise((resolve) => {
+              database.ref('padel-data').once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                  if (data.players) this.players = data.players;
+                  if (data.reservations) this.reservations = data.reservations;
+                  if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
+                  if (data.scores) this.scores = data.scores;
+                  if (data.logs) this.logs = data.logs;
+                  if (data.admins && data.admins.length > 0) {
+                    this.admins = data.admins;
+                    if (!this.admins.includes('jzrvnk')) this.admins.push('jzrvnk');
+                    if (!this.admins.includes('frans')) this.admins.push('frans');
+                  }
+                }
+                resolve();
+              });
+            });
+            
+            await Promise.race([dataPromise, timeoutPromise]);
+            
+            // Setup real-time listener after initial load
+            database.ref('padel-data').on('value', (snapshot) => {
               const data = snapshot.val();
               if (data) {
                 if (data.players) this.players = data.players;
@@ -802,34 +867,12 @@
                 if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
                 if (data.scores) this.scores = data.scores;
                 if (data.logs) this.logs = data.logs;
-                if (data.admins && data.admins.length > 0) {
-                  this.admins = data.admins;
-                  // Ensure jzrvnk and frans are always admin
-                  if (!this.admins.includes('jzrvnk')) this.admins.push('jzrvnk');
-                  if (!this.admins.includes('frans')) this.admins.push('frans');
-                  await this.saveToFirebase();
-                } else if (auth.currentUser) {
-                  // Als er geen admins zijn en je bent ingelogd, word je admin
-                  const username = Object.keys(this.userEmailMap).find(key => this.userEmailMap[key] === auth.currentUser.email) || auth.currentUser.email.split('@')[0];
-                  this.admins = [username, 'jzrvnk', 'frans'];
-                  console.log('✅ Making first user admin:', username);
-                  await this.saveToFirebase();
-                }
-              } else {
-                // Eerste keer - initialiseer met jouw email als admin
-                const currentUserEmail = auth.currentUser?.email;
-                if (currentUserEmail) {
-                  const username = Object.keys(this.userEmailMap).find(key => this.userEmailMap[key] === currentUserEmail) || currentUserEmail.split('@')[0];
-                  this.admins = [username, 'jzrvnk', 'frans'];
-                  this.userEmailMap[username] = currentUserEmail;
-                  console.log('✅ Initializing first admin:', username);
-                  await this.saveToFirebase();
-                }
+                if (data.admins) this.admins = data.admins;
               }
             });
+            
           } catch (error) {
             console.error('Firebase initialization error:', error);
-            // Fallback to localStorage
             this.loadLocalData();
           }
         },
@@ -915,47 +958,43 @@
             return;
           }
           
+          this.loginError = '';
           const username = this.loginData.username.toLowerCase();
           
-          // Wait for ALL Firebase data to load
-          await new Promise(resolve => {
-            database.ref('padel-data').once('value', (snapshot) => {
-              const data = snapshot.val();
-              if (data) {
-                if (data.players) this.players = data.players;
-                if (data.admins) this.admins = data.admins;
-                if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
-              }
-              resolve();
-            });
-          });
-          
-          console.log('🔍 Login attempt - username:', username);
-          console.log('🔍 Players:', this.players);
-          console.log('🔍 Admins:', this.admins);
-          
-          // Check if user is in database (player)
-          const player = this.players.find(p => p.username === username);
-          if (player && player.password) {
-            console.log('🔍 Found player in database');
-            // Database login for players
-            if (player.password === this.loginData.password) {
-              this.isLoggedIn = true;
-              this.currentUser = username;
-              this.loginError = '';
-              this.showLoginAlways = false;
-              console.log('✅ Database login successful');
-              return;
-            } else {
-              this.loginError = 'Onjuiste gebruikersnaam of wachtwoord';
-              console.log('❌ Wrong password');
-              return;
-            }
-          }
-          
-          console.log('🔍 Trying Firebase Auth login');
-          // Firebase Auth login for admin
           try {
+            // Wait for Firebase data to load
+            await new Promise(resolve => {
+              database.ref('padel-data').once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                  if (data.players) this.players = data.players;
+                  if (data.admins) this.admins = data.admins;
+                  if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
+                }
+                resolve();
+              });
+            });
+            
+            console.log('Login attempt - username:', username);
+            
+            // Check if user is in database (player)
+            const player = this.players.find(p => p.username === username);
+            if (player && player.password) {
+              console.log('Found player in database');
+              if (player.password === this.loginData.password) {
+                this.isLoggedIn = true;
+                this.currentUser = username;
+                this.showLoginAlways = false;
+                console.log('Database login successful');
+                return;
+              } else {
+                this.loginError = 'Onjuiste gebruikersnaam of wachtwoord';
+                return;
+              }
+            }
+            
+            console.log('Trying Firebase Auth login');
+            // Firebase Auth login for admin
             let email = this.userEmailMap[username];
             let loginSuccess = false;
             
@@ -985,8 +1024,8 @@
             this.showLoginAlways = false;
             this.userEmailMap[username] = email;
             await this.saveToFirebase();
-            this.loginError = '';
-            console.log('✅ Firebase Auth login successful');
+            console.log('Firebase Auth login successful');
+            
           } catch (error) {
             console.error('Login error:', error);
             this.loginError = 'Onjuiste gebruikersnaam of wachtwoord';
