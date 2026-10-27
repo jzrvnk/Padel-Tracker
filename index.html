@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#176b43">
-  <meta name="description" content="Bekijk de padelplanning: wie speelt wanneer en op welk veld.">
+  <meta name="description" content="Bekijk de padelreservaties, spelers en statistieken.">
   <link rel="manifest" href="manifest.json">
   <title>Padelplanning</title>
   <style>
@@ -16,6 +16,9 @@
     h1 { margin: 0 0 6px; font-size: clamp(1.5rem, 5vw, 2rem); }
     header p { margin: 0; opacity: .9; }
     main { padding: 20px 14px 48px; }
+    nav { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+    nav button { padding: 10px 16px; color: #176b43; background: white; border: 1px solid #bdd3c3; border-radius: 8px; font: inherit; cursor: pointer; white-space: nowrap; }
+    nav button.active { color: white; background: #176b43; border-color: #176b43; }
     #status { padding: 14px; text-align: center; color: #52645a; }
     .date-card { margin: 0 0 16px; padding: 18px; background: white; border-radius: 14px; box-shadow: 0 2px 10px #173b2510; }
     .date-card h2 { margin: 0 0 14px; color: #176b43; font-size: 1.15rem; text-transform: capitalize; }
@@ -25,18 +28,27 @@
     .court ol { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .court li { min-height: 40px; padding: 9px 10px; overflow-wrap: anywhere; background: white; border: 1px solid #e1ebe3; border-radius: 7px; }
     .court li.empty { color: #9aa69e; }
+    .player-list, .stats-list { display: grid; gap: 10px; }
+    .player-row, .stats-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: white; border-radius: 10px; box-shadow: 0 2px 10px #173b2510; }
+    .player-name, .stats-name { font-weight: 650; }
+    .stats-detail, .player-detail { color: #637269; font-size: .9rem; text-align: right; }
     .refresh { display: block; margin: 18px auto 0; padding: 10px 16px; color: #176b43; background: white; border: 1px solid #bdd3c3; border-radius: 8px; font: inherit; cursor: pointer; }
     footer { padding: 10px; color: #78867d; text-align: center; font-size: .85rem; }
   </style>
 </head>
 <body>
-  <header><div><h1>Padelplanning</h1><p>Bekijk wie wanneer op welk veld speelt.</p></div></header>
+  <header><div><h1>Padelclub</h1><p>Reservaties, statistieken en spelers.</p></div></header>
   <main>
-    <div id="status" role="status">Planning laden…</div>
-    <section id="schedule" aria-live="polite"></section>
-    <button id="refresh" class="refresh" type="button">Planning vernieuwen</button>
+    <nav aria-label="Pagina's">
+      <button type="button" class="active" data-view="reservations">Reservaties</button>
+      <button type="button" data-view="stats">Statistieken</button>
+      <button type="button" data-view="players">Spelers</button>
+    </nav>
+    <div id="status" role="status">Gegevens laden…</div>
+    <section id="content" aria-live="polite"></section>
+    <button id="refresh" class="refresh" type="button">Vernieuwen</button>
   </main>
-  <footer>Tik op ‘Planning vernieuwen’ om de laatste wijzigingen op te halen.</footer>
+  <footer>Tik op ‘Vernieuwen’ om de laatste wijzigingen op te halen.</footer>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script>
@@ -53,7 +65,9 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const statusElement = document.getElementById('status');
-    const scheduleElement = document.getElementById('schedule');
+    const contentElement = document.getElementById('content');
+    let currentData = null;
+    let currentView = 'reservations';
     const dateFormatter = new Intl.DateTimeFormat('nl-BE', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
@@ -69,17 +83,33 @@
       });
     }
 
-    function renderSchedule(data) {
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+    }
+
+    function getPlayers(data) {
       const players = Array.isArray(data?.players) ? data.players : Object.values(data?.players || {});
+      return players.filter(player => player && player.id != null);
+    }
+
+    function statNumber(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function renderReservations(data) {
+      const players = getPlayers(data);
       const reservations = data?.reservations || {};
-      const playerNames = new Map(players.map(player => [String(player.id), player.name || player.username || 'Speler']));
+      const playerNames = new Map(players.map(player => [String(player.id), player.name || 'Speler']));
       const dates = nextFridays();
       const cards = dates.map(date => {
         const dateReservations = reservations[date] || {};
         const courts = [1, 2].map(court => {
           const names = [1, 2, 3, 4].map(position => {
             const playerId = dateReservations[`${date}-${court}-${position}`];
-            return playerId ? playerNames.get(String(playerId)) || 'Onbekende speler' : '';
+            return playerId ? escapeHtml(playerNames.get(String(playerId)) || 'Onbekende speler') : '';
           });
           return `<article class="court"><h3>Veld ${court}</h3><ol>${names.map(name => `<li class="${name ? '' : 'empty'}">${name || 'Vrij'}</li>`).join('')}</ol></article>`;
         }).join('');
@@ -87,10 +117,39 @@
         return `<article class="date-card"><h2>${dateLabel}</h2><div class="courts">${courts}</div></article>`;
       }).join('');
 
-      scheduleElement.innerHTML = cards;
       statusElement.textContent = dates.some(date => Object.keys(reservations[date] || {}).length)
-        ? 'Aankomende speeldagen'
+        ? 'Aankomende reservaties'
         : 'Er zijn nog geen spelers ingepland.';
+      contentElement.innerHTML = cards;
+    }
+
+    function renderStats(data) {
+      const leaderboard = getPlayers(data).filter(player => statNumber(player.stats?.matchesPlayed) > 0)
+        .map(player => ({ ...player, winRate: statNumber(player.stats.matchesWon) / statNumber(player.stats.matchesPlayed) * 100 }))
+        .sort((a, b) => b.winRate - a.winRate || statNumber(b.stats.setsWon) - statNumber(a.stats.setsWon));
+      statusElement.textContent = leaderboard.length ? 'Klassement' : 'Er zijn nog geen statistieken beschikbaar.';
+      contentElement.innerHTML = `<div class="stats-list">${leaderboard.map((player, index) => {
+        const stats = player.stats;
+        return `<article class="stats-row"><div><div class="stats-name">${index + 1}. ${escapeHtml(player.name || 'Speler')}</div><div class="stats-detail">${statNumber(stats.matchesWon)} gewonnen · ${statNumber(stats.matchesLost)} verloren · sets ${statNumber(stats.setsWon)}-${statNumber(stats.setsLost)}</div></div><strong>${player.winRate.toFixed(0)}%</strong></article>`;
+      }).join('')}</div>`;
+    }
+
+    function renderPlayers(data) {
+      const players = getPlayers(data).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'nl'));
+      statusElement.textContent = players.length ? `${players.length} spelers` : 'Er zijn nog geen spelers beschikbaar.';
+      contentElement.innerHTML = `<div class="player-list">${players.map(player => {
+        const stats = player.stats;
+        const played = statNumber(stats?.matchesPlayed);
+        const detail = played ? `${played} match${played === 1 ? '' : 'en'}` : 'Nog geen matchen';
+        return `<article class="player-row"><span class="player-name">${escapeHtml(player.name || 'Speler')}</span><span class="player-detail">${detail}</span></article>`;
+      }).join('')}</div>`;
+    }
+
+    function renderCurrentView() {
+      if (!currentData) return;
+      if (currentView === 'stats') renderStats(currentData);
+      else if (currentView === 'players') renderPlayers(currentData);
+      else renderReservations(currentData);
     }
 
     function loadSchedule() {
@@ -99,19 +158,29 @@
         .then(snapshot => {
           const data = snapshot.val();
           if (!data) {
-            scheduleElement.replaceChildren();
+            contentElement.replaceChildren();
             statusElement.textContent = 'Er is nog geen planning beschikbaar.';
             return;
           }
-          renderSchedule(data);
+          currentData = data;
+          renderCurrentView();
         })
         .catch(error => {
           console.error('Planning laden mislukt:', error);
-          scheduleElement.replaceChildren();
-          statusElement.textContent = 'De planning kon niet worden geladen. Controleer of de database publiek leesbaar is.';
+          contentElement.replaceChildren();
+          statusElement.textContent = error.code === 'PERMISSION_DENIED'
+            ? 'Firebase blokkeert de planning. Geef public-schedule openbare leesrechten in de Firebase Realtime Database Rules.'
+            : `De planning kon niet worden geladen (${error.code || 'verbindingsfout'}). Controleer de internetverbinding en Firebase Realtime Database Rules.`;
         });
     }
 
+    document.querySelectorAll('[data-view]').forEach(button => {
+      button.addEventListener('click', () => {
+        currentView = button.dataset.view;
+        document.querySelectorAll('[data-view]').forEach(tab => tab.classList.toggle('active', tab === button));
+        renderCurrentView();
+      });
+    });
     document.getElementById('refresh').addEventListener('click', loadSchedule);
     loadSchedule();
     if ('serviceWorker' in navigator) {

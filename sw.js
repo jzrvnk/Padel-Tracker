@@ -1,11 +1,10 @@
-const CACHE_NAME = 'padel-club-firebase-v2';
+const CACHE_NAME = 'padel-club-firebase-v3';
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  'https://unpkg.com/vue@3/dist/vue.global.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js'
 ];

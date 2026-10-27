@@ -892,7 +892,17 @@
             await Promise.all([
               database.ref('padel-data').set(data),
               database.ref('public-schedule').set({
-                players: this.players.map(player => ({ id: player.id, name: player.name })),
+                players: this.players.map(player => ({
+                  id: player.id,
+                  name: player.name,
+                  stats: player.stats ? {
+                    matchesPlayed: player.stats.matchesPlayed || 0,
+                    matchesWon: player.stats.matchesWon || 0,
+                    matchesLost: player.stats.matchesLost || 0,
+                    setsWon: player.stats.setsWon || 0,
+                    setsLost: player.stats.setsLost || 0
+                  } : null
+                })),
                 reservations: this.reservations,
                 lastUpdated: data.lastUpdated
               })
