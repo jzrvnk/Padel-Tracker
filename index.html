@@ -22,6 +22,7 @@
     #status { padding: 14px; text-align: center; color: #52645a; }
     .date-card { margin: 0 0 16px; padding: 18px; background: white; border-radius: 14px; box-shadow: 0 2px 10px #173b2510; }
     .date-card h2 { margin: 0 0 14px; color: #176b43; font-size: 1.15rem; text-transform: capitalize; }
+    .blocked-day { padding: 18px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; font-weight: 700; }
     .courts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
     .court { padding: 14px; background: #f3f8f4; border-radius: 10px; }
     .court h3 { margin: 0 0 10px; font-size: 1rem; }
@@ -142,9 +143,17 @@
     function renderReservations(data) {
       const players = getPlayers(data);
       const reservations = data?.reservations || {};
+      const blockedDates = data?.blockedDates || {};
       const playerNames = new Map(players.map(player => [String(player.id), player.name || 'Speler']));
       const dates = nextFridays();
       const cards = dates.map(date => {
+        const dateLabel = dateFormatter.format(new Date(`${date}T12:00:00`));
+        const block = blockedDates[date];
+        const isBlocked = typeof block === 'boolean' ? block : Boolean(block?.blocked);
+        if (isBlocked) {
+          const reason = typeof block === 'object' && block.reason ? block.reason : 'Dag geblokkeerd';
+          return `<article class="date-card"><h2>${dateLabel}</h2><div class="blocked-day">${escapeHtml(reason)}</div></article>`;
+        }
         const dateReservations = reservations[date] || {};
         const courts = [1, 2].map(court => {
           const names = [1, 2, 3, 4].map(position => {
@@ -153,11 +162,14 @@
           });
           return `<article class="court"><h3>Veld ${court}</h3><ol>${names.map(name => `<li class="${name ? '' : 'empty'}">${name || 'Vrij'}</li>`).join('')}</ol></article>`;
         }).join('');
-        const dateLabel = dateFormatter.format(new Date(`${date}T12:00:00`));
         return `<article class="date-card"><h2>${dateLabel}</h2><div class="courts">${courts}</div></article>`;
       }).join('');
 
-      statusElement.textContent = dates.some(date => Object.keys(reservations[date] || {}).length)
+      statusElement.textContent = dates.some(date => {
+        const block = blockedDates[date];
+        const isBlocked = typeof block === 'boolean' ? block : Boolean(block?.blocked);
+        return !isBlocked && Object.keys(reservations[date] || {}).length > 0;
+      })
         ? 'Aankomende Planning'
         : 'Er zijn nog geen spelers ingepland.';
       contentElement.innerHTML = cards;

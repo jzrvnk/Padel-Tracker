@@ -252,6 +252,10 @@
           <tbody>
             <tr v-for="friday in fridays" :key="friday.date">
               <td class="date-cell">{{ friday.formatted }}</td>
+              <td v-if="isDateBlocked(friday.date)" :colspan="players.length + 2" style="padding: 12px; color: #9a3412; font-weight: 700; background: #fff7ed;">
+                {{ blockedDates[friday.date]?.reason || 'Dag geblokkeerd' }}
+              </td>
+              <template v-else>
               
               <td class="terrain-cell">
                 <span :class="getTerrainClass(friday.date, 1)">
@@ -280,6 +284,7 @@
                   @change="togglePlayerSelection(friday.date, player.id)"
                 >
               </td>
+              </template>
             </tr>
           </tbody>
         </table>
@@ -364,6 +369,7 @@
             style="padding: 10px 20px;">
             👥 Spelers
           </button>
+          <button class="btn" :class="adminSubTab === 'days' ? 'btn-primary' : 'btn-secondary'" @click="adminSubTab = 'days'" style="padding: 10px 20px;">Speeldagen</button>
           <button 
             class="btn" 
             :class="adminSubTab === 'scores' ? 'btn-primary' : 'btn-secondary'"
@@ -414,6 +420,13 @@
             </div>
             <div></div>
           </div>
+
+          <div v-if="editingPlayer" style="margin: 0 0 20px;">
+            <label style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+              <input v-model="newPlayer.available" type="checkbox">
+              Beschikbaar voor vervanging
+            </label>
+          </div>
           
           <button v-if="!editingPlayer" class="btn btn-primary" @click="addPlayer">➕ Speler Toevoegen</button>
           <div v-else style="display: flex; gap: 10px;">
@@ -445,6 +458,22 @@
           </div>
         </div>
         
+        <!-- Speeldagen blokkeren -->
+        <div v-if="adminSubTab === 'days'" class="admin-form">
+          <h3>Speeldagen blokkeren</h3>
+          <p style="margin: 8px 0 20px; color: #666;">Vink een dag aan en vul eventueel de reden in. De reden verschijnt dan in de openbare planning.</p>
+          <div v-for="friday in fridays" :key="'blocked-'+friday.date" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; padding: 14px; background: #f5f5f5; border-radius: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; min-width: 180px; font-weight: 600;">
+              <input type="checkbox" :checked="isDateBlocked(friday.date)" @change="setDateBlocked(friday.date, $event.target.checked)">
+              {{ friday.formatted }} blokkeren
+            </label>
+            <input v-if="isDateBlocked(friday.date)" type="text" :value="blockedDates[friday.date]?.reason || ''" @input="updateBlockedReason(friday.date, $event.target.value)" placeholder="Reden, bijvoorbeeld tornooi of oudjaar" style="flex: 1; min-width: 220px; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+          </div>
+          <div v-if="hasUnsavedBlockedChanges" class="save-bar">
+            <button class="btn btn-primary" @click="saveBlockedDates">Blokkades opslaan</button>
+          </div>
+        </div>
+
         <!-- Uitslagen Tab -->
         <div v-if="adminSubTab === 'scores'" class="admin-form">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -594,7 +623,7 @@
           loginData: { username: '', password: '' },
           showPassword: false,
           
-          newPlayer: { name: '', email: '', phone: '', username: '', password: '' },
+          newPlayer: { name: '', email: '', phone: '', username: '', password: '', available: true },
           editProfile: { name: '', email: '', phone: '', notifications: false, available: true },
           editingPlayer: null,
           
@@ -603,6 +632,8 @@
           userEmailMap: {},
           
           reservations: {},
+          blockedDates: {},
+          hasUnsavedBlockedChanges: false,
           pendingReservations: {},
           hasUnsavedChanges: false,
           fridays: [],
@@ -771,6 +802,40 @@
       },
       
       methods: {
+        isDateBlocked(date) {
+          const blocked = this.blockedDates?.[date];
+          return typeof blocked === 'boolean' ? blocked : Boolean(blocked?.blocked);
+        },
+
+        setDateBlocked(date, isBlocked) {
+          if (isBlocked) {
+            this.blockedDates[date] = {
+              blocked: true,
+              reason: this.blockedDates[date]?.reason || ''
+            };
+          } else {
+            delete this.blockedDates[date];
+          }
+          this.hasUnsavedBlockedChanges = true;
+        },
+
+        updateBlockedReason(date, reason) {
+          const current = this.blockedDates[date] || { blocked: true, reason: '' };
+          this.blockedDates[date] = { ...current, blocked: true, reason };
+          this.hasUnsavedBlockedChanges = true;
+        },
+
+        async saveBlockedDates() {
+          this.blockedDates = Object.fromEntries(
+            Object.entries(this.blockedDates || {}).filter(([, blocked]) =>
+              typeof blocked === 'boolean' ? blocked : blocked?.blocked
+            ).map(([date, blocked]) => [date, typeof blocked === 'boolean' ? { blocked: true, reason: '' } : blocked])
+          );
+          await this.saveToFirebase();
+          this.hasUnsavedBlockedChanges = false;
+          this.showToast('Geblokkeerde speeldagen opgeslagen', 'success');
+        },
+
         prevLogPage() {
           if (this.logCurrentPage > 1) this.logCurrentPage--;
         },
@@ -843,6 +908,7 @@
                 if (data) {
                   if (data.players) this.players = data.players;
                   if (data.reservations) this.reservations = data.reservations;
+                  this.blockedDates = data.blockedDates || {};
                   if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
                   if (data.scores) this.scores = data.scores;
                   if (data.logs) this.logs = data.logs;
@@ -864,6 +930,7 @@
               if (data) {
                 if (data.players) this.players = data.players;
                 if (data.reservations) this.reservations = data.reservations;
+                this.blockedDates = data.blockedDates || {};
                 if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
                 if (data.scores) this.scores = data.scores;
                 if (data.logs) this.logs = data.logs;
@@ -882,6 +949,7 @@
             const data = {
               players: this.players,
               reservations: this.reservations,
+              blockedDates: this.blockedDates,
               userEmailMap: this.userEmailMap,
               admins: this.admins,
               scores: this.scores,
@@ -901,6 +969,7 @@
           const data = {
             players: this.players,
             reservations: this.reservations,
+            blockedDates: this.blockedDates,
             userEmailMap: this.userEmailMap,
             admins: this.admins,
             scores: this.scores,
@@ -917,6 +986,7 @@
               const data = JSON.parse(saved);
               if (data.players) this.players = data.players;
               if (data.reservations) this.reservations = data.reservations;
+              this.blockedDates = data.blockedDates || {};
               if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
               if (data.admins) this.admins = data.admins;
               if (data.scores) this.scores = data.scores;
@@ -1148,7 +1218,7 @@
           await this.saveToFirebase();
           
           const savedPassword = this.newPlayer.password.trim();
-          this.newPlayer = { name: '', email: '', phone: '', username: '', password: '' };
+          this.newPlayer = { name: '', email: '', phone: '', username: '', password: '', available: true };
           this.showToast(`Speler toegevoegd! Login: ${username} / ${savedPassword}`, 'success');
         },
         
@@ -1162,7 +1232,8 @@
             email: player.email || '',
             phone: player.phone || '',
             username: player.username || '',
-            password: '' // Don't show existing password
+            password: '', // Don't show existing password
+            available: player.available !== false
           };
           
           // Scroll to top of admin panel
@@ -1194,7 +1265,8 @@
                 name: this.newPlayer.name.trim(),
                 email: this.newPlayer.email.trim(),
                 phone: this.newPlayer.phone.trim(),
-                username: this.newPlayer.username.trim()
+                username: this.newPlayer.username.trim(),
+                available: this.newPlayer.available !== false
               };
               
               // Update userEmailMap if username changed
@@ -1216,7 +1288,7 @@
         
         cancelEdit() {
           this.editingPlayer = null;
-          this.newPlayer = { name: '', email: '', phone: '', username: '', password: '' };
+          this.newPlayer = { name: '', email: '', phone: '', username: '', password: '', available: true };
         },
         
         async removePlayer(playerId) {
