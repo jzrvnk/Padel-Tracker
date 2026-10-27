@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎾 Padel Jaarkalender</title>
+  <link rel="stylesheet" href="starter.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>🎾 Padel Jaarkalender 2025</h1>
+      <nav>
+        <button class="nav-btn active" onclick="showSection('calendar')">Kalender</button>
+        <button class="nav-btn" onclick="showSection('admin')">Admin</button>
+      </nav>
+    </header>
+    
+    <!-- Kalender Sectie -->
+    <main id="calendar-section" class="main-content">
+      <section class="welcome-section">
+        <h2>Vrijdag Padel Planning</h2>
+        <p>Overzicht van alle vrijdagen en speler beschikbaarheid</p>
+      </section>
+      
+      <section class="calendar-container">
+        <div class="calendar-table">
+          <table id="calendar-table">
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Voorkeur %</th>
+                <!-- Speler kolommen worden dynamisch toegevoegd -->
+              </tr>
+            </thead>
+            <tbody id="calendar-body">
+              <!-- Vrijdagen worden hier gegenereerd -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    
+    <!-- Admin Sectie -->
+    <main id="admin-section" class="main-content" style="display: none;">
+      <section class="welcome-section">
+        <h2>Admin Panel</h2>
+        <p>Beheer spelers en instellingen</p>
+      </section>
+      
+      <section class="actions-section">
+        <button class="btn btn-primary" onclick="showModal('new-data')">Nieuwe Data</button>
+        <button class="btn btn-danger" onclick="clearAllData()">Verwijder Data</button>
+      </section>
+      
+      <section class="players-section">
+        <h3>Huidige Spelers</h3>
+        <div id="players-list" class="players-grid">
+          <!-- Spelers worden hier getoond -->
+        </div>
+      </section>
+    </main>
+    
+    <!-- Modal voor Nieuwe Data -->
+    <div id="new-data-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal('new-data')">&times;</span>
+        <h3>Nieuwe Speler Toevoegen</h3>
+        
+        <div class="form-group">
+          <label>Speler Naam:</label>
+          <input type="text" id="player-name" placeholder="Naam van speler">
+        </div>
+        
+        <div class="form-group">
+          <label>Voorkeur Percentage:</label>
+          <select id="player-preference">
+            <option value="25">25% - Af en toe</option>
+            <option value="33">33% - Regelmatig</option>
+            <option value="50" selected>50% - Gemiddeld</option>
+            <option value="75">75% - Vaak</option>
+            <option value="100">100% - Altijd</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Niet beschikbaar op specifieke datums:</label>
+          <div id="unavailable-dates" class="dates-grid">
+            <!-- Checkboxes voor alle vrijdagen -->
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="addPlayer()">Toevoegen</button>
+          <button class="btn btn-secondary" onclick="closeModal('new-data')">Annuleren</button>
+        </div>
+      </div>
+    </div>
+    
+    <footer class="footer">
+      <p>&copy; 2024 Padel Jaarkalender</p>
+    </footer>
+  </div>
+  
+  <script>
+    // Data opslag
+    let players = JSON.parse(localStorage.getItem('padel-players') || '[]');
+    
+    // Genereer alle vrijdagen van 2024
+    function getFridaysOfYear(year) {
+      const fridays = [];
+      const date = new Date(year, 0, 1);
+      
+      // Zoek eerste vrijdag
+      while (date.getDay() !== 5) {
+        date.setDate(date.getDate() + 1);
+      }
+      
+      // Voeg alle vrijdagen toe
+      while (date.getFullYear() === year) {
+        fridays.push(new Date(date));
+        date.setDate(date.getDate() + 7);
+      }
+      
+      return fridays;
+    }
+    
+    // Toon sectie
+    function showSection(section) {
+      document.getElementById('calendar-section').style.display = section === 'calendar' ? 'block' : 'none';
+      document.getElementById('admin-section').style.display = section === 'admin' ? 'block' : 'none';
+      
+      // Update nav buttons
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (section === 'calendar') renderCalendar();
+      if (section === 'admin') renderPlayersList();
+    }
+    
+    // Render kalender
+    function renderCalendar() {
+      const fridays = getFridaysOfYear(2024);
+      const table = document.getElementById('calendar-table');
+      const thead = table.querySelector('thead tr');
+      const tbody = document.getElementById('calendar-body');
+      
+      // Clear en rebuild header
+      thead.innerHTML = '<th>Datum</th><th>Voorkeur %</th>';
+      players.forEach(player => {
+        thead.innerHTML += `<th>${player.name}</th>`;
+      });
+      
+      // Clear en rebuild body
+      tbody.innerHTML = '';
+      fridays.forEach(friday => {
+        const row = document.createElement('tr');
+        const dateStr = friday.toISOString().split('T')[0];
+        const formattedDate = friday.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+        
+        row.innerHTML = `
+          <td class="date-cell">${formattedDate}</td>
+          <td>
+            <select onchange="updatePreference('${dateStr}', this.value)">
+              <option value="25">25%</option>
+              <option value="33">33%</option>
+              <option value="50" selected>50%</option>
+              <option value="75">75%</option>
+              <option value="100">100%</option>
+            </select>
+          </td>
+        `;
+        
+        // Voeg speler kolommen toe
+        players.forEach(player => {
+          const isUnavailable = player.unavailableDates?.includes(dateStr);
+          row.innerHTML += `
+            <td class="player-cell ${isUnavailable ? 'unavailable' : 'available'}">
+              ${isUnavailable ? '❌' : '✅'}
+            </td>
+          `;
+        });
+        
+        tbody.appendChild(row);
+      });
+    }
+    
+    // Modal functies
+    function showModal(modalId) {
+      if (modalId === 'new-data') {
+        renderUnavailableDates();
+      }
+      document.getElementById(modalId + '-modal').style.display = 'block';
+    }
+    
+    function closeModal(modalId) {
+      document.getElementById(modalId + '-modal').style.display = 'none';
+    }
+    
+    // Render unavailable dates checkboxes
+    function renderUnavailableDates() {
+      const fridays = getFridaysOfYear(2024);
+      const container = document.getElementById('unavailable-dates');
+      
+      container.innerHTML = '';
+      fridays.forEach(friday => {
+        const dateStr = friday.toISOString().split('T')[0];
+        const formattedDate = friday.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+        
+        container.innerHTML += `
+          <label class="date-checkbox">
+            <input type="checkbox" value="${dateStr}">
+            ${formattedDate}
+          </label>
+        `;
+      });
+    }
+    
+    // Voeg speler toe
+    function addPlayer() {
+      const name = document.getElementById('player-name').value.trim();
+      const preference = document.getElementById('player-preference').value;
+      const unavailableDates = Array.from(document.querySelectorAll('#unavailable-dates input:checked')).map(cb => cb.value);
+      
+      if (!name) {
+        alert('Vul een naam in!');
+        return;
+      }
+      
+      players.push({
+        id: Date.now(),
+        name,
+        preference: parseInt(preference),
+        unavailableDates
+      });
+      
+      localStorage.setItem('padel-players', JSON.stringify(players));
+      closeModal('new-data');
+      renderPlayersList();
+      
+      // Clear form
+      document.getElementById('player-name').value = '';
+      document.getElementById('player-preference').value = '50';
+      document.querySelectorAll('#unavailable-dates input').forEach(cb => cb.checked = false);
+    }
+    
+    // Render spelers lijst
+    function renderPlayersList() {
+      const container = document.getElementById('players-list');
+      
+      if (players.length === 0) {
+        container.innerHTML = '<p>Nog geen spelers toegevoegd.</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      players.forEach(player => {
+        container.innerHTML += `
+          <div class="player-card">
+            <h4>${player.name}</h4>
+            <p>Voorkeur: ${player.preference}%</p>
+            <p>Niet beschikbaar: ${player.unavailableDates?.length || 0} dagen</p>
+            <button class="btn btn-danger btn-small" onclick="removePlayer(${player.id})">Verwijder</button>
+          </div>
+        `;
+      });
+    }
+    
+    // Verwijder speler
+    function removePlayer(playerId) {
+      if (confirm('Speler verwijderen?')) {
+        players = players.filter(p => p.id !== playerId);
+        localStorage.setItem('padel-players', JSON.stringify(players));
+        renderPlayersList();
+      }
+    }
+    
+    // Verwijder alle data
+    function clearAllData() {
+      if (confirm('Alle data verwijderen? Dit kan niet ongedaan gemaakt worden!')) {
+        players = [];
+        localStorage.removeItem('padel-players');
+        renderPlayersList();
+        renderCalendar();
+      }
+    }
+    
+    // Update voorkeur percentage
+    function updatePreference(date, percentage) {
+      // Hier kun je logica toevoegen om voorkeuren per datum op te slaan
+      console.log(`Datum ${date}: ${percentage}%`);
+    }
+    
+    // Initialiseer app
+    document.addEventListener('DOMContentLoaded', function() {
+      renderCalendar();
+      renderPlayersList();
+    });
+  </script>
+</body>
+</html>
