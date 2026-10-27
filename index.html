@@ -31,13 +31,10 @@
     .court li:first-child:not(.empty) { color: #c62828; font-weight: 700; }
     .player-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
     .stats-list { display: grid; gap: 10px; }
-    .progress-panel { margin-bottom: 20px; padding: 18px; background: white; border-radius: 14px; box-shadow: 0 2px 10px #173b2510; }
-    .progress-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .progress-heading h2 { margin: 0; color: #176b43; font-size: 1.1rem; }
-    .progress-heading select { max-width: 50%; padding: 8px; border: 1px solid #bdd3c3; border-radius: 7px; font: inherit; }
-    .progress-chart { display: block; width: 100%; height: auto; overflow: visible; }
-    .progress-chart text { fill: #637269; font: 12px system-ui, sans-serif; }
-    .progress-empty { padding: 24px 8px; color: #637269; text-align: center; }
+    .mini-progress-wrap { flex: 0 0 150px; width: 150px; }
+    .mini-progress { display: block; width: 100%; height: auto; }
+    .mini-progress-empty { flex: 0 0 150px; color: #87958c; font-size: .8rem; text-align: center; }
+    @media (max-width: 600px) { .stats-row { flex-wrap: wrap; } .mini-progress-wrap, .mini-progress-empty { order: 3; flex-basis: 100%; width: 100%; max-width: 220px; margin-left: 42px; } .stats-total { margin-left: auto; } }
     .player-card, .stats-row { position: relative; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px; background: white; border: 1px solid #e1ebe3; border-radius: 10px; box-shadow: 0 2px 10px #173b2510; }
     .player-card { cursor: pointer; }
     .player-main, .stats-main { display: grid; gap: 5px; min-width: 0; }
@@ -91,7 +88,6 @@
     const contentElement = document.getElementById('content');
     let currentData = null;
     let currentView = 'reservations';
-    let selectedProgressPlayerId = null;
     const dateFormatter = new Intl.DateTimeFormat('nl-BE', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
@@ -167,66 +163,44 @@
       contentElement.innerHTML = cards;
     }
 
-    function renderProgressChart(player, data, players) {
-      if (!player) return '<section class="progress-panel"><h2>Progressie</h2><p class="progress-empty">Er zijn nog geen wedstrijdstatistieken beschikbaar.</p></section>';
+    function getPlayerProgress(player, data) {
       const playerId = String(player.id);
       const allScores = Array.isArray(data?.scores) ? data.scores : Object.values(data?.scores || {});
       const matches = allScores
         .filter(score => score && score.date && Array.isArray(score.team1) && Array.isArray(score.team2)
           && [...score.team1, ...score.team2].some(id => String(id) === playerId))
         .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
-      const options = players.map(item => `<option value="${escapeHtml(item.id)}" ${String(item.id) === playerId ? 'selected' : ''}>${escapeHtml(item.name || 'Speler')}</option>`).join('');
-      if (!matches.length) {
-        return `<section class="progress-panel"><div class="progress-heading"><h2>Progressie · winstpercentage</h2><select id="progress-player" aria-label="Kies speler">${options}</select></div><p class="progress-empty">Voor deze speler zijn nog geen afzonderlijke scores opgeslagen.</p></section>`;
-      }
-
       let wins = 0;
-      const points = matches.map((score, index) => {
+      return matches.map((score, index) => {
         const inTeam1 = score.team1.some(id => String(id) === playerId);
         const winner = score.winner || (statNumber(score.team1Sets) > statNumber(score.team2Sets) ? 'team1' : 'team2');
         if ((inTeam1 && winner === 'team1') || (!inTeam1 && winner === 'team2')) wins++;
         return { date: score.date, rate: wins / (index + 1) * 100 };
       });
+    }
 
-      const width = 800, height = 300, left = 48, right = 18, top = 18, bottom = 42;
-      const plotWidth = width - left - right, plotHeight = height - top - bottom;
-      const x = index => points.length === 1 ? left + plotWidth / 2 : left + index / (points.length - 1) * plotWidth;
-      const y = rate => top + (100 - rate) / 100 * plotHeight;
-      const grid = [0, 25, 50, 75, 100].map(rate => {
-        const position = y(rate);
-        return `<line x1="${left}" y1="${position}" x2="${width - right}" y2="${position}" stroke="#e1ebe3"/><text x="${left - 8}" y="${position + 4}" text-anchor="end">${rate}%</text>`;
-      }).join('');
+    function renderMiniProgress(player, data) {
+      const points = getPlayerProgress(player, data);
+      if (!points.length) return '<span class="mini-progress-empty">Geen wedstrijdevolutie</span>';
+      const width = 150, height = 44, padding = 4;
+      const x = index => points.length === 1 ? width / 2 : padding + index / (points.length - 1) * (width - padding * 2);
+      const y = rate => height - padding - rate / 100 * (height - padding * 2);
       const line = points.map((point, index) => `${x(index)},${y(point.rate)}`).join(' ');
-      const dots = points.map((point, index) => {
-        const date = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'short' }).format(new Date(`${point.date}T12:00:00`));
-        return `<circle cx="${x(index)}" cy="${y(point.rate)}" r="4" fill="#176b43"><title>${escapeHtml(date)}: ${point.rate.toFixed(0)}%</title></circle>`;
-      }).join('');
-      const firstDate = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'short' }).format(new Date(`${points[0].date}T12:00:00`));
-      const lastDate = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'short' }).format(new Date(`${points[points.length - 1].date}T12:00:00`));
-      const svg = `<svg class="progress-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Cumulatief winstpercentage van ${escapeHtml(player.name || 'speler')} over ${points.length} wedstrijden">${grid}<polyline points="${line}" fill="none" stroke="#176b43" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${dots}<text x="${left}" y="${height - 10}">${escapeHtml(firstDate)}</text><text x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(lastDate)}</text></svg>`;
-      return `<section class="progress-panel"><div class="progress-heading"><h2>Progressie · winstpercentage</h2><select id="progress-player" aria-label="Kies speler">${options}</select></div>${svg}</section>`;
+      const last = points[points.length - 1];
+      return `<svg class="mini-progress" viewBox="0 0 ${width} ${height}" role="img" aria-label="Winpercentage evolutie van ${escapeHtml(player.name || 'speler')} over ${points.length} wedstrijden"><line x1="${padding}" y1="${height / 2}" x2="${width - padding}" y2="${height / 2}" stroke="#e1ebe3"/><polyline points="${line}" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${x(points.length - 1)}" cy="${y(last.rate)}" r="3.5" fill="#176b43"/><title>${points.length} wedstrijden · laatste cumulatieve winpercentage ${last.rate.toFixed(0)}%</title></svg>`;
     }
 
     function renderStats(data) {
       const players = getPlayers(data).filter(player => statNumber(player.stats?.matchesPlayed) > 0);
-      const selectedPlayer = players.find(player => String(player.id) === String(selectedProgressPlayerId)) || players[0];
-      if (selectedPlayer) selectedProgressPlayerId = selectedPlayer.id;
       const leaderboard = players
         .map(player => ({ ...player, winRate: statNumber(player.stats.matchesWon) / statNumber(player.stats.matchesPlayed) * 100 }))
         .sort((a, b) => b.winRate - a.winRate || statNumber(b.stats.setsWon) - statNumber(a.stats.setsWon));
       statusElement.textContent = leaderboard.length ? 'Klassement' : 'Er zijn nog geen statistieken beschikbaar.';
-      const chart = renderProgressChart(selectedPlayer, data, players);
-      const rows = leaderboard.map((player, index) => {
+      contentElement.innerHTML = `<div class="stats-list">${leaderboard.map((player, index) => {
         const stats = player.stats;
         const medal = ['&#129351;', '&#129352;', '&#129353;'][index] || `${index + 1}.`;
-        return `<article class="stats-row"><div class="stats-rank">${medal}</div><div class="stats-main"><div class="stats-name">${escapeHtml(player.name || 'Speler')}</div><div class="stats-detail">${statNumber(stats.matchesWon)} gewonnen · ${statNumber(stats.matchesLost)} verloren · sets ${statNumber(stats.setsWon)}-${statNumber(stats.setsLost)}</div></div><div class="stats-total"><strong>${player.winRate.toFixed(0)}%</strong><span>${statNumber(stats.matchesPlayed)} matchen</span></div></article>`;
-      }).join('');
-      contentElement.innerHTML = `${chart}<div class="stats-list">${rows}</div>`;
-      const selector = contentElement.querySelector('#progress-player');
-      if (selector) selector.addEventListener('change', () => {
-        selectedProgressPlayerId = selector.value;
-        renderStats(data);
-      });
+        return `<article class="stats-row"><div class="stats-rank">${medal}</div><div class="stats-main"><div class="stats-name">${escapeHtml(player.name || 'Speler')}</div><div class="stats-detail">${statNumber(stats.matchesWon)} gewonnen · ${statNumber(stats.matchesLost)} verloren · sets ${statNumber(stats.setsWon)}-${statNumber(stats.setsLost)}</div></div><div class="mini-progress-wrap">${renderMiniProgress(player, data)}</div><div class="stats-total"><strong>${player.winRate.toFixed(0)}%</strong><span>${statNumber(stats.matchesPlayed)} matchen</span></div></article>`;
+      }).join('')}</div>`;
     }
 
     function renderPlayers(data) {
