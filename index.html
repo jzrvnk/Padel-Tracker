@@ -54,6 +54,7 @@
     @media (max-width: 650px) { .player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .player-card:nth-child(3n) .player-popover { right: auto; left: 0; } .player-card:nth-child(2n) .player-popover { right: 0; left: auto; } }
     @media (max-width: 420px) { .player-list { grid-template-columns: 1fr; } .player-card:nth-child(n) .player-popover { right: auto; left: 0; } }
     .refresh { display: block; margin: 18px auto 0; padding: 10px 16px; color: #176b43; background: white; border: 1px solid #bdd3c3; border-radius: 8px; font: inherit; cursor: pointer; }
+    .install-app { display: none; margin: 18px auto 0; padding: 11px 16px; color: white; background: #176b43; border: 0; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
     footer { padding: 10px; color: #78867d; text-align: center; font-size: .85rem; }
   </style>
 </head>
@@ -68,6 +69,7 @@
     <div id="status" role="status">Gegevens laden…</div>
     <section id="content" aria-live="polite"></section>
     <button id="refresh" class="refresh" type="button">Vernieuwen</button>
+    <button id="installApp" class="install-app" type="button">Installeer de Padel-app</button>
   </main>
   <footer>Tik op ‘Vernieuwen’ om de laatste wijzigingen op te halen.</footer>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -302,6 +304,24 @@
       }
     });
     document.getElementById('refresh').addEventListener('click', loadSchedule);
+    let deferredInstallPrompt = null;
+    const installButton = document.getElementById('installApp');
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      installButton.style.display = 'block';
+    });
+    installButton.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installButton.style.display = 'none';
+    });
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      installButton.style.display = 'none';
+    });
     loadSchedule();
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
