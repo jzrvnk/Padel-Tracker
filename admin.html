@@ -251,7 +251,14 @@
           </thead>
           <tbody>
             <tr v-for="friday in fridays" :key="friday.date">
-              <td class="date-cell">{{ friday.formatted }}</td>
+              <td class="date-cell">
+                <div>{{ friday.formatted }}</div>
+                <label v-if="admins.includes(currentUser)" style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; font-weight: 500; white-space: nowrap;">
+                  <input type="checkbox" :checked="isDateBlocked(friday.date)" @change="setDateBlocked(friday.date, $event.target.checked)">
+                  Dag blokkeren
+                </label>
+                <input v-if="admins.includes(currentUser) && isDateBlocked(friday.date)" type="text" :value="blockedDates[friday.date]?.reason || ''" @input="updateBlockedReason(friday.date, $event.target.value)" placeholder="Reden" aria-label="Reden voor blokkade" style="width: 140px; margin-top: 6px; padding: 5px;">
+              </td>
               <td v-if="isDateBlocked(friday.date)" :colspan="players.length + 2" style="padding: 12px; color: #9a3412; font-weight: 700; background: #fff7ed;">
                 {{ blockedDates[friday.date]?.reason || 'Dag geblokkeerd' }}
               </td>
@@ -297,6 +304,9 @@
           <button class="btn btn-secondary" @click="cancelChanges">
             ❌ Annuleren
           </button>
+        </div>
+        <div v-if="admins.includes(currentUser) && hasUnsavedBlockedChanges" class="save-bar">
+          <button class="btn btn-primary" @click="saveBlockedDates">Blokkades opslaan</button>
         </div>
       </div>
 
