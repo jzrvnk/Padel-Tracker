@@ -28,8 +28,10 @@
     .court ol { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .court li { min-height: 40px; padding: 9px 10px; overflow-wrap: anywhere; background: white; border: 1px solid #e1ebe3; border-radius: 7px; }
     .court li.empty { color: #9aa69e; }
-    .player-list, .stats-list { display: grid; gap: 10px; }
-    .player-row, .stats-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: white; border-radius: 10px; box-shadow: 0 2px 10px #173b2510; }
+    .player-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
+    .stats-list { display: grid; gap: 10px; }
+    .player-card, .stats-row { position: relative; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px; background: white; border: 1px solid #e1ebe3; border-radius: 10px; box-shadow: 0 2px 10px #173b2510; }
+    .player-card { cursor: pointer; }
     .player-main, .stats-main { display: grid; gap: 5px; min-width: 0; }
     .player-name, .stats-name { font-weight: 650; }
     .stats-detail, .player-detail { color: #637269; font-size: .9rem; overflow-wrap: anywhere; }
@@ -37,12 +39,20 @@
     .stats-total { display: grid; gap: 3px; min-width: 72px; text-align: right; }
     .stats-total strong { color: #176b43; font-size: 1.25rem; }
     .stats-total span { color: #637269; font-size: .8rem; }
+    .player-popover { display: none; position: absolute; z-index: 5; top: calc(100% + 7px); left: 0; width: min(310px, calc(100vw - 48px)); padding: 14px; color: #183128; background: white; border: 1px solid #bdd3c3; border-radius: 10px; box-shadow: 0 8px 24px #173b2530; }
+    .player-popover strong { display: block; margin-bottom: 8px; color: #176b43; }
+    .player-popover span { display: block; margin-top: 5px; color: #52645a; font-size: .88rem; overflow-wrap: anywhere; }
+    .player-card:hover .player-popover, .player-card:focus .player-popover, .player-card.is-open .player-popover { display: block; }
+    .player-card:nth-child(4n) .player-popover { right: 0; left: auto; }
+    @media (max-width: 900px) { .player-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } .player-card:nth-child(4n) .player-popover { right: auto; left: 0; } .player-card:nth-child(3n) .player-popover { right: 0; left: auto; } }
+    @media (max-width: 650px) { .player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .player-card:nth-child(3n) .player-popover { right: auto; left: 0; } .player-card:nth-child(2n) .player-popover { right: 0; left: auto; } }
+    @media (max-width: 420px) { .player-list { grid-template-columns: 1fr; } .player-card:nth-child(n) .player-popover { right: auto; left: 0; } }
     .refresh { display: block; margin: 18px auto 0; padding: 10px 16px; color: #176b43; background: white; border: 1px solid #bdd3c3; border-radius: 8px; font: inherit; cursor: pointer; }
     footer { padding: 10px; color: #78867d; text-align: center; font-size: .85rem; }
   </style>
 </head>
 <body>
-  <header><div><h1>Padelclub</h1><p>Planning, statistieken en spelers.</p></div></header>
+  <header><div><h1>Padel - Vrijdagavond BTC</h1><p>Planning, statistieken en spelers.</p></div></header>
   <main>
     <nav aria-label="Pagina's">
       <button type="button" class="active" data-view="reservations">Planning</button>
@@ -95,13 +105,33 @@
     }
 
     function getPlayers(data) {
-      const players = Array.isArray(data?.players) ? data.players : Object.values(data?.players || {});
-      return players.filter(player => player && player.id != null);
+      const source = data?.players || {};
+      const players = Array.isArray(source)
+        ? source
+        : Object.entries(source).map(([id, player]) => ({ ...player, id: player?.id ?? id }));
+      const admins = Array.isArray(data?.admins) ? data.admins : Object.values(data?.admins || {});
+      return players.filter(player => player && player.id != null)
+        .map(player => ({ ...player, isAdmin: admins.includes(player.username) }));
     }
 
     function statNumber(value) {
       const number = Number(value);
       return Number.isFinite(number) ? number : 0;
+    }
+
+    function maskEmail(value) {
+      if (!value) return 'Geen e-mail';
+      const parts = String(value).split('@');
+      if (parts.length !== 2) return `${parts[0].slice(0, 1)}***`;
+      const domainParts = parts[1].split('.');
+      const domain = `${domainParts[0].slice(0, 1)}***${domainParts.length > 1 ? `.${domainParts.slice(1).join('.')}` : ''}`;
+      return `${parts[0].slice(0, 1)}***@${domain}`;
+    }
+
+    function maskPhone(value) {
+      if (!value) return 'Geen telefoon';
+      const digits = String(value).replace(/\D/g, '');
+      return digits.length > 2 ? `***${digits.slice(-2)}` : '***';
     }
 
     function renderReservations(data) {
@@ -135,7 +165,7 @@
       statusElement.textContent = leaderboard.length ? 'Klassement' : 'Er zijn nog geen statistieken beschikbaar.';
       contentElement.innerHTML = `<div class="stats-list">${leaderboard.map((player, index) => {
         const stats = player.stats;
-        const medal = ['🥇', '🥈', '🥉'][index] || `${index + 1}.`;
+        const medal = ['&#129351;', '&#129352;', '&#129353;'][index] || `${index + 1}.`;
         return `<article class="stats-row"><div class="stats-rank">${medal}</div><div class="stats-main"><div class="stats-name">${escapeHtml(player.name || 'Speler')}</div><div class="stats-detail">${statNumber(stats.matchesWon)} gewonnen · ${statNumber(stats.matchesLost)} verloren · sets ${statNumber(stats.setsWon)}-${statNumber(stats.setsLost)}</div></div><div class="stats-total"><strong>${player.winRate.toFixed(0)}%</strong><span>${statNumber(stats.matchesPlayed)} matchen</span></div></article>`;
       }).join('')}</div>`;
     }
@@ -144,16 +174,17 @@
       const players = getPlayers(data).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'nl'));
       statusElement.textContent = players.length ? `${players.length} spelers` : 'Er zijn nog geen spelers beschikbaar.';
       contentElement.innerHTML = `<div class="player-list">${players.map(player => {
-        const stats = player.stats;
-        const played = statNumber(stats?.matchesPlayed);
+        const stats = player.stats || {};
+        const played = statNumber(stats.matchesPlayed);
         const winRate = played ? (statNumber(stats.matchesWon) / played * 100).toFixed(0) : '0';
-        const email = player.email ? escapeHtml(player.email) : 'Geen e-mail';
-        const phone = player.phone ? escapeHtml(player.phone) : 'Geen telefoon';
-        const username = player.username ? escapeHtml(player.username) : 'Geen gebruikersnaam';
-        const record = played
-          ? `${played} matchen · ${statNumber(stats.matchesWon)} gewonnen · ${statNumber(stats.matchesLost)} verloren · sets ${statNumber(stats.setsWon)}-${statNumber(stats.setsLost)} · winrate ${winRate}%`
-          : 'Nog geen statistieken';
-        return `<article class="player-row"><div class="player-main"><span class="player-name">${escapeHtml(player.name || 'Speler')}</span><span class="player-detail">${username} · ${email} · ${phone}</span><span class="player-detail">${record}</span></div></article>`;
+        const name = escapeHtml(player.name || 'Speler');
+        const username = escapeHtml(player.username || 'Geen gebruikersnaam');
+        const email = escapeHtml(maskEmail(player.email));
+        const phone = escapeHtml(maskPhone(player.phone));
+        const availability = player.available == null
+          ? 'Beschikbaarheid niet opgegeven'
+          : player.available ? 'Beschikbaar voor vervanging' : 'Niet beschikbaar voor vervanging';
+        return `<article class="player-card" tabindex="0" role="button" aria-expanded="false" aria-label="Details van ${name}"><div class="player-main"><span class="player-name">${name}</span><span class="player-detail">${winRate}% winst · ${played} matchen</span></div><div class="player-popover" role="tooltip"><strong>${name}${player.isAdmin ? ' · Beheerder' : ''}</strong><span>Gebruikersnaam: ${username}</span><span>E-mail: ${email}</span><span>Telefoon: ${phone}</span><span>${escapeHtml(availability)}</span><span>Matchen: ${played}</span><span>Gewonnen / verloren: ${statNumber(stats.matchesWon)} / ${statNumber(stats.matchesLost)}</span><span>Sets gewonnen / verloren: ${statNumber(stats.setsWon)} / ${statNumber(stats.setsLost)}</span><span>Winpercentage: ${winRate}%</span></div></article>`;
       }).join('')}</div>`;
     }
 
@@ -166,7 +197,7 @@
 
     function loadSchedule() {
       statusElement.textContent = 'Planning laden…';
-      database.ref('public-schedule').once('value')
+      database.ref('padel-data').once('value')
         .then(snapshot => {
           const data = snapshot.val();
           if (!data) {
@@ -181,7 +212,7 @@
           console.error('Planning laden mislukt:', error);
           contentElement.replaceChildren();
           statusElement.textContent = error.code === 'PERMISSION_DENIED'
-            ? 'Firebase blokkeert de planning. Geef public-schedule openbare leesrechten in de Firebase Realtime Database Rules.'
+            ? 'Firebase blokkeert de gegevens. Geef padel-data openbare leesrechten in de Firebase Realtime Database Rules.'
             : `De planning kon niet worden geladen (${error.code || 'verbindingsfout'}). Controleer de internetverbinding en Firebase Realtime Database Rules.`;
         });
     }
@@ -192,6 +223,25 @@
         document.querySelectorAll('[data-view]').forEach(tab => tab.classList.toggle('active', tab === button));
         renderCurrentView();
       });
+    });
+    contentElement.addEventListener('click', event => {
+      const card = event.target.closest('.player-card');
+      contentElement.querySelectorAll('.player-card.is-open').forEach(openCard => {
+        if (openCard !== card) {
+          openCard.classList.remove('is-open');
+          openCard.setAttribute('aria-expanded', 'false');
+        }
+      });
+      if (card) {
+        const isOpen = card.classList.toggle('is-open');
+        card.setAttribute('aria-expanded', String(isOpen));
+      }
+    });
+    contentElement.addEventListener('keydown', event => {
+      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.player-card')) {
+        event.preventDefault();
+        event.target.click();
+      }
     });
     document.getElementById('refresh').addEventListener('click', loadSchedule);
     loadSchedule();

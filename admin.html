@@ -991,6 +991,8 @@
                   if (data.admins) this.admins = data.admins;
                   if (data.userEmailMap) this.userEmailMap = data.userEmailMap;
                 }
+                if (!this.admins.some(admin => String(admin).toLowerCase() === 'frans')) this.admins.push('frans');
+                if (!this.admins.some(admin => String(admin).toLowerCase() === 'jzrvnk')) this.admins.push('jzrvnk');
                 resolve();
               });
             });
@@ -999,7 +1001,8 @@
             
             // Check if user is in database (player)
             const player = this.players.find(p => p.username === username);
-            if (player && player.password) {
+            const isAdminAccount = this.admins.some(admin => String(admin).toLowerCase() === username);
+            if (player && player.password && !isAdminAccount) {
               console.log('Found player in database');
               if (player.password === this.loginData.password) {
                 this.isLoggedIn = true;
@@ -1012,10 +1015,15 @@
                 return;
               }
             }
+
+            if (!isAdminAccount) {
+              this.loginError = 'Geen beheerderaccount gevonden';
+              return;
+            }
             
             console.log('Trying Firebase Auth login');
             // Firebase Auth login for admin
-            let email = this.userEmailMap[username];
+            let email = this.userEmailMap[username] || player?.email;
             let loginSuccess = false;
             
             if (email) {
