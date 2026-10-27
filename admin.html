@@ -889,7 +889,14 @@
               lastUpdated: new Date().toISOString(),
               version: '3.2'
             };
-            await database.ref('padel-data').set(data);
+            await Promise.all([
+              database.ref('padel-data').set(data),
+              database.ref('public-schedule').set({
+                players: this.players.map(player => ({ id: player.id, name: player.name })),
+                reservations: this.reservations,
+                lastUpdated: data.lastUpdated
+              })
+            ]);
           } catch (error) {
             console.error('Firebase save error:', error);
             // Fallback to localStorage
