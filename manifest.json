@@ -3,7 +3,7 @@
   "short_name": "Padel Club",
   "description": "Reserveer je padel terrein eenvoudig via de app",
   "id": "./",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#2e7d32",
   "theme_color": "#2e7d32",
