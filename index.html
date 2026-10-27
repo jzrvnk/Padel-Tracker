@@ -28,6 +28,7 @@
     .court ol { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .court li { min-height: 40px; padding: 9px 10px; overflow-wrap: anywhere; background: white; border: 1px solid #e1ebe3; border-radius: 7px; }
     .court li.empty { color: #9aa69e; }
+    .court li:first-child:not(.empty) { color: #c62828; font-weight: 700; }
     .player-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
     .stats-list { display: grid; gap: 10px; }
     .player-card, .stats-row { position: relative; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px; background: white; border: 1px solid #e1ebe3; border-radius: 10px; box-shadow: 0 2px 10px #173b2510; }

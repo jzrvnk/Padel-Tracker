@@ -889,27 +889,7 @@
               lastUpdated: new Date().toISOString(),
               version: '3.2'
             };
-            await Promise.all([
-              database.ref('padel-data').set(data),
-              database.ref('public-schedule').set({
-                players: this.players.map(player => ({
-                  id: player.id,
-                  name: player.name,
-                  username: player.username || '',
-                  email: player.email || '',
-                  phone: player.phone || '',
-                  stats: player.stats ? {
-                    matchesPlayed: player.stats.matchesPlayed || 0,
-                    matchesWon: player.stats.matchesWon || 0,
-                    matchesLost: player.stats.matchesLost || 0,
-                    setsWon: player.stats.setsWon || 0,
-                    setsLost: player.stats.setsLost || 0
-                  } : null
-                })),
-                reservations: this.reservations,
-                lastUpdated: data.lastUpdated
-              })
-            ]);
+            await database.ref('padel-data').set(data);
           } catch (error) {
             console.error('Firebase save error:', error);
             // Fallback to localStorage
@@ -993,6 +973,7 @@
                 }
                 if (!this.admins.some(admin => String(admin).toLowerCase() === 'frans')) this.admins.push('frans');
                 if (!this.admins.some(admin => String(admin).toLowerCase() === 'jzrvnk')) this.admins.push('jzrvnk');
+                if (!this.admins.some(admin => String(admin).toLowerCase() === 'admin')) this.admins.push('admin');
                 resolve();
               });
             });
@@ -1035,7 +1016,7 @@
               }
             }
             
-            if (!loginSuccess && (username === 'frans' || username === 'jzrvnk')) {
+            if (!loginSuccess && (username === 'frans' || username === 'jzrvnk' || username === 'admin')) {
               email = 'frans.vanstraeten@telenet.be';
               try {
                 await auth.signInWithEmailAndPassword(email, this.loginData.password);
