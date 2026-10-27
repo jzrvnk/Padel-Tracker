@@ -1,4 +1,4 @@
-const CACHE_NAME = 'padel-club-firebase-v4';
+const CACHE_NAME = 'padel-club-firebase-v5';
 const urlsToCache = [
   './',
   './index.html',

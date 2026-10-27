@@ -895,6 +895,9 @@
                 players: this.players.map(player => ({
                   id: player.id,
                   name: player.name,
+                  username: player.username || '',
+                  email: player.email || '',
+                  phone: player.phone || '',
                   stats: player.stats ? {
                     matchesPlayed: player.stats.matchesPlayed || 0,
                     matchesWon: player.stats.matchesWon || 0,
