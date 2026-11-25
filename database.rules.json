@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "padel-data": {
+      ".read": true,
+      ".write": true
+    },
+    "padel-push-subscriptions": {
+      ".read": false,
+      "$subscriptionId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['token', 'updatedAt'])",
+        "token": {
+          ".validate": "newData.isString() && newData.val().length <= 4096"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}

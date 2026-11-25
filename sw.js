@@ -1,4 +1,34 @@
-const CACHE_NAME = 'padel-club-firebase-v17';
+const CACHE_NAME = 'padel-club-firebase-v18';
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: 'AIzaSyAcSZ1Y_YrNl0zQ_IFvfYDksC9gEO_3rnE',
+  authDomain: 'padel-club-vrijdag-btpc.firebaseapp.com',
+  databaseURL: 'https://padel-club-vrijdag-btpc-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'padel-club-vrijdag-btpc',
+  storageBucket: 'padel-club-vrijdag-btpc.firebasestorage.app',
+  messagingSenderId: '698934728052',
+  appId: '1:698934728052:web:de92050172426854bcc821'
+});
+
+const messaging = firebase.messaging();
+messaging.onBackgroundMessage(payload => {
+  const data = payload.data || {};
+  return self.registration.showNotification(data.title || 'Padelplanning', {
+    body: data.body || 'De planning is aangepast.',
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    data: { url: data.url || './index.html' }
+  });
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || './index.html', self.location.href).href;
+  event.waitUntil(clients.openWindow(targetUrl));
+});
+
 const urlsToCache = [
   './',
   './index.html',

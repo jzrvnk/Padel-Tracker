@@ -15,6 +15,9 @@
     header > div, main { width: min(900px, 100%); margin: auto; }
     h1 { margin: 0 0 6px; font-size: clamp(1.5rem, 5vw, 2rem); }
     header p { margin: 0; opacity: .9; }
+    .push-toggle { margin-top: 14px; padding: 9px 13px; color: #176b43; background: white; border: 0; border-radius: 8px; font: inherit; font-weight: 650; cursor: pointer; }
+    .push-toggle:disabled { opacity: .72; cursor: default; }
+    #pushStatus { min-height: 1.2em; margin-top: 7px; font-size: .88rem; }
     main { padding: 20px 14px 48px; }
     nav { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
     nav button { padding: 10px 16px; color: #176b43; background: white; border: 1px solid #bdd3c3; border-radius: 8px; font: inherit; cursor: pointer; white-space: nowrap; }
@@ -59,7 +62,7 @@
   </style>
 </head>
 <body>
-  <header><div><h1>Padel - Vrijdagavond BTC</h1><p>Planning, statistieken en spelers.</p></div></header>
+  <header><div><h1>Padel - Vrijdagavond BTC</h1><p>Planning, statistieken en spelers.</p><button id="pushToggle" class="push-toggle" type="button">Meldingen controleren…</button><div id="pushStatus" role="status" aria-live="polite"></div></div></header>
   <main>
     <nav aria-label="Pagina's">
       <button type="button" class="active" data-view="reservations">Planning</button>
@@ -74,6 +77,7 @@
   <footer>Tik op ‘Vernieuwen’ om de laatste wijzigingen op te halen.</footer>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAcSZ1Y_YrNl0zQ_IFvfYDksC9gEO_3rnE",
@@ -87,6 +91,13 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+    const pushButton = document.getElementById('pushToggle');
+    const pushStatus = document.getElementById('pushStatus');
+    const pushSubscriptionKey = 'padel-push-subscription-id';
+    // Vul dit met de openbare Web Push-sleutel uit Firebase Console > Projectinstellingen > Cloud Messaging.
+    const firebaseVapidKey = 'BLHqINvAutdGSpNqxhDgoTcQwX8ORpPhlsauYWbtQD1xnSx2EAqQGNVs6WBEGyqAobhXhVq9JN3Ddz-OHw1w2IA';
+    let messaging = null;
+    let serviceWorkerRegistration = null;
     const statusElement = document.getElementById('status');
     const contentElement = document.getElementById('content');
     let currentData = null;
@@ -264,6 +275,89 @@
         });
     }
 
+    function setPushMessage(message) {
+      pushStatus.textContent = message;
+    }
+
+    function getMessagingClient() {
+      if (!messaging) {
+        messaging = firebase.messaging();
+        messaging.onMessage(payload => {
+          const data = payload.data || {};
+          if (Notification.permission === 'granted') {
+            new Notification(data.title || 'Padelplanning', {
+              body: data.body || 'De planning is aangepast.',
+              icon: './icon-192.png'
+            });
+          }
+        });
+      }
+      return messaging;
+    }
+
+    async function updatePushButton() {
+      if (!('Notification' in window) || !('serviceWorker' in navigator)
+          || !firebase.messaging || !(await firebase.messaging.isSupported())) {
+        pushButton.textContent = 'Meldingen niet ondersteund';
+        pushButton.disabled = true;
+        setPushMessage('Gebruik een recente versie van Chrome op Android om pushmeldingen te ontvangen.');
+        return;
+      }
+      if (firebaseVapidKey.startsWith('VUL_HIER')) {
+        pushButton.textContent = 'Pushmeldingen nog instellen';
+        pushButton.disabled = true;
+        setPushMessage('De beheerder moet eerst de Web Push-sleutel van Firebase invullen.');
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        pushButton.textContent = 'Meldingen geblokkeerd';
+        pushButton.disabled = true;
+        setPushMessage('Je kunt meldingen weer toestaan via de site-instellingen van je browser.');
+        return;
+      }
+      const isEnabled = Notification.permission === 'granted' && Boolean(localStorage.getItem(pushSubscriptionKey));
+      if (isEnabled) getMessagingClient();
+      pushButton.textContent = isEnabled ? 'Meldingen uitschakelen' : 'Meldingen inschakelen';
+      pushButton.disabled = false;
+    }
+
+    async function togglePushNotifications() {
+      pushButton.disabled = true;
+      try {
+        if (Notification.permission === 'granted' && localStorage.getItem(pushSubscriptionKey)) {
+          const subscriptionId = localStorage.getItem(pushSubscriptionKey);
+          await database.ref(`padel-push-subscriptions/${subscriptionId}`).remove();
+          await getMessagingClient().deleteToken();
+          localStorage.removeItem(pushSubscriptionKey);
+          setPushMessage('Pushmeldingen zijn uitgeschakeld op dit toestel.');
+          return;
+        }
+        if (!firebaseVapidKey || firebaseVapidKey.startsWith('VUL_HIER')) {
+          setPushMessage('Pushmeldingen zijn nog niet geconfigureerd. De beheerder moet eerst de Firebase Web Push-sleutel instellen.');
+          return;
+        }
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          setPushMessage('Je hebt geen toestemming gegeven voor pushmeldingen.');
+          return;
+        }
+        const messagingClient = getMessagingClient();
+        serviceWorkerRegistration = serviceWorkerRegistration || await navigator.serviceWorker.ready;
+        const token = await messagingClient.getToken({ vapidKey: firebaseVapidKey, serviceWorkerRegistration });
+        if (!token) throw new Error('Firebase gaf geen pushregistratie terug.');
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+        const subscriptionId = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+        await database.ref(`padel-push-subscriptions/${subscriptionId}`).set({ token, updatedAt: Date.now() });
+        localStorage.setItem(pushSubscriptionKey, subscriptionId);
+        setPushMessage('Pushmeldingen zijn ingeschakeld op dit toestel.');
+      } catch (error) {
+        console.error('Pushinstelling wijzigen mislukt:', error);
+        setPushMessage(`Pushmeldingen konden niet worden gewijzigd (${error.code || error.message || 'fout'}).`);
+      } finally {
+        await updatePushButton();
+      }
+    }
+
     document.querySelectorAll('[data-view]').forEach(button => {
       button.addEventListener('click', () => {
         currentView = button.dataset.view;
@@ -304,6 +398,7 @@
       }
     });
     document.getElementById('refresh').addEventListener('click', loadSchedule);
+    pushButton.addEventListener('click', togglePushNotifications);
     let deferredInstallPrompt = null;
     const installButton = document.getElementById('installApp');
     window.addEventListener('beforeinstallprompt', event => {
@@ -326,10 +421,18 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
-          .then(registration => registration.update())
+          .then(registration => {
+            serviceWorkerRegistration = registration;
+            return registration.update();
+          })
           .catch(console.error);
       });
     }
+    updatePushButton().catch(error => {
+      console.error('Pushmeldingen controleren mislukt:', error);
+      pushButton.textContent = 'Meldingen niet beschikbaar';
+      pushButton.disabled = true;
+    });
   </script>
 </body>
 </html>
